@@ -1,15 +1,45 @@
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
 
-const hospitalSchema = new mongoose.Schema({
-    name: {type: String, required: true},
-    email: {type: String, required: true, unique: true},
-    phone: {type: String, required: true},
-    adress: {type: String, required: true},
-    location: {
-        lat: {type: Number, required: true},
-        lng:{type: Number, required: true} 
+const HospitalSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
+  address: {
+    type: String,
+    required: true
+  },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
     },
-    createdAt: {type: Date, default: Date.now}
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: true
+    }
+  },
+  active: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-export default mongoose.model('Hospital', hospitalSchema)
+// Indexer la localisation pour les recherches géospatiales
+HospitalSchema.index({ location: '2dsphere' });
+
+const Hospital = mongoose.model('Hospital', HospitalSchema);
+export default Hospital;
