@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
+dotenv.config()
 // Configuration du transporteur d'email
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -11,6 +13,13 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+console.log('EMAIL CONFIG =>', {
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+  secure: process.env.EMAIL_SECURE,
+  user: process.env.EMAIL_USER
+});
+
 
 // Fonction pour générer un mot de passe aléatoire
 export const generateRandomPassword = () => {

@@ -1,11 +1,14 @@
-import express from 'express';
+
 import cors from 'cors';
+import express from 'express';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import hospitalRoutes from './routes/hospitalRoutes.js';
 import ambulanceRoutes from './routes/ambulanceRoutes.js';
 import patientRoutes from './routes/patientRoutes.js';
 import { protect, authorize } from './middlewares/authMiddleware.js';
+import './initAdmin.js';
+
 
 const app = express();
 
