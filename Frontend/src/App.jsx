@@ -1,16 +1,46 @@
-function App() {
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+import { useEffect, useState } from "react";
+
+import NavList from "./components/Dashbord/NavList";
+import Home from "./Pages/Home";
+import Login from "./Pages/Login";
+import Loader from "./components/Loader"; // le spinner qu'on a créé
+
+// Composant principal qui gère le routing + loader
+const AppContent = () => {
+  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    const timer = setTimeout(() => setLoading(false), 1000); // simule un petit chargement
+    return () => clearTimeout(timer);
+  }, [location]);
+
   return (
-    <div className="bg-green-500 text-white p-4 text-center">
-      Tailwind fonctionne si ce fond est vert !
-      <button
-        type="button"
-        data-ripple-light="true"
-        class="align-middle select-none font-sans font-bold text-center uppercase transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg bg-gray-900 text-white shadow-md shadow-gray-900/10 hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none"
-      >
-        Button
-      </button>
+    <div className="min-h-screen bg-gray-50 relative">
+      {loading && <Loader />}
+      <NavList />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
     </div>
   );
-}
+};
+
+// App "global" qui enveloppe tout dans le Router
+const App = () => {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+};
 
 export default App;

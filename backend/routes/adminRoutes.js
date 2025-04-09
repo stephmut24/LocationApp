@@ -5,5 +5,4 @@ const router = express.Router();
 
 router.post('/hospitals', addHospital);
 
-
 export default router;
