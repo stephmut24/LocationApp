@@ -14,7 +14,7 @@ const Login = () => {
   const onSubmit = (data) => {
     console.log("Login data:", data);
     // Simuler une connexion réussie
-    navigate("/dashboard"); // Redirection après connexion
+    navigate("/admin"); // Redirection après connexion
   };
 
   return (
