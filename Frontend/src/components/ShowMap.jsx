@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import { MAPBOX_TOKEN } from "../utils/mapboxConfig";
 
 const MAP_CENTER = [29.2356, -1.6835]; // Goma ?
-const ZOOM_LEVEL = 14;
+const ZOOM_LEVEL = 18;
 
 const styleOptions = {
   standard: "mapbox://styles/steph-24/cm9gwmiai007r01sg1nk5d0pf",

@@ -18,11 +18,19 @@ import {
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
   InformationCircleIcon,
+  TruckIcon,
+  ExclamationTriangleIcon,
+  MinusIcon,
 } from "@heroicons/react/24/outline";
 import HospitalForm from "./HopitalForm";
 import ConfirmDialog from "./ConfirmDialog";
 
-const Sidbar = ({ isDrawerOpen, openDrawer }) => {
+const Sidbar = ({
+  isDrawerOpen,
+  openDrawer,
+  closeDrawer,
+  mode = "hospital",
+}) => {
   const [isHospitalsOpen, setIsHospitalsOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -31,22 +39,48 @@ const Sidbar = ({ isDrawerOpen, openDrawer }) => {
 
   // Taille des icônes selon l'état de la sidebar
   const iconSize = isDrawerOpen ? "h-6 w-6" : "h-7 w-7";
-  const iconColor = "text-gray-300"; // Légèrement plus clair pour une meilleure visibilité
+  const iconColor = "text-gray-300";
 
-  const handleAddHospital = () => {
+  // Configuration dynamique selon le mode
+  const managementConfig = {
+    hospital: {
+      label: "Gérer les hôpitaux",
+      icon: BuildingOffice2Icon,
+      addLabel: "Ajouter",
+      editLabel: "Modifier",
+      deleteLabel: "Supprimer",
+      deleteMessage: "Êtes-vous sûr de vouloir supprimer cet hôpital ?",
+    },
+    ambulance: {
+      label: "Gérer les ambulances",
+      icon: TruckIcon,
+      addLabel: "Ajouter",
+      editLabel: "Modifier",
+      deleteLabel: "Supprimer",
+      deleteMessage: "Êtes-vous sûr de vouloir supprimer cette ambulance ?",
+    },
+    emergency: {
+      label: "Gérer les urgences",
+      icon: ExclamationTriangleIcon,
+      assignLabel: "Assigner Ambulance",
+      unassignLabel: "Désassigner Ambulance",
+    },
+  };
+
+  const config = managementConfig[mode];
+
+  const handleAdd = () => {
     setFormMode("add");
     setSelectedHospital(null);
     setFormOpen(true);
   };
 
-  const handleEditHospital = () => {
+  const handleEdit = () => {
     setFormMode("edit");
-    // Ici vous devriez sélectionner un hôpital à modifier
-    // Pour l'exemple, je crée un objet vide
     setSelectedHospital({
-      name: "Nom de l'hôpital",
+      name: mode === "hospital" ? "Nom de l'hôpital" : "Nom de l'ambulance",
       email: "email@exemple.com",
-      address: "Adresse de l'hôpital",
+      address: "Adresse",
       location: {
         coordinates: [0, 0],
       },
@@ -54,36 +88,48 @@ const Sidbar = ({ isDrawerOpen, openDrawer }) => {
     setFormOpen(true);
   };
 
-  const handleDeleteHospital = () => {
+  const handleDelete = () => {
     setConfirmOpen(true);
   };
 
-  const handleSubmitHospital = async (data) => {
+  const handleAssignAmbulance = () => {
+    console.log("Assigner une ambulance à une urgence");
+    // Ici vous pourriez ouvrir un formulaire ou une modal
+  };
+
+  const handleUnassignAmbulance = () => {
+    console.log("Désassigner une ambulance d'une urgence");
+    // Ici vous pourriez ouvrir un formulaire ou une modal
+  };
+
+  const handleSubmit = async (data) => {
     try {
-      // Ici vous ferez l'appel API selon le mode
+      const endpoint = mode === "hospital" ? "hospitals" : "ambulances";
+      let response;
+
       if (formMode === "add") {
-        // Appel à votre API pour ajouter un hôpital
-        const response = await fetch("/api/hospitals", {
+        response = await fetch(`/api/${endpoint}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(data),
         });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.message);
       } else {
-        // Appel à votre API pour modifier un hôpital
-        const response = await fetch(`/api/hospitals/${selectedHospital._id}`, {
+        response = await fetch(`/api/${endpoint}/${selectedHospital._id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(data),
         });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.message);
       }
+
+      const text = await response.text();
+      const result = text ? JSON.parse(text) : {};
+
+      if (!response.ok)
+        throw new Error(result.message || "Une erreur est survenue");
     } catch (error) {
       console.error("Erreur:", error);
       throw error;
@@ -92,12 +138,17 @@ const Sidbar = ({ isDrawerOpen, openDrawer }) => {
 
   const handleConfirmDelete = async () => {
     try {
-      // Appel à votre API pour supprimer un hôpital
-      const response = await fetch(`/api/hospitals/${selectedHospital._id}`, {
+      const endpoint = mode === "hospital" ? "hospitals" : "ambulances";
+      const response = await fetch(`/api/${endpoint}/${selectedHospital._id}`, {
         method: "DELETE",
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message);
+
+      const text = await response.text();
+      const result = text ? JSON.parse(text) : {};
+
+      if (!response.ok)
+        throw new Error(result.message || "Erreur lors de la suppression");
+
       setConfirmOpen(false);
     } catch (error) {
       console.error("Erreur:", error);
@@ -111,7 +162,6 @@ const Sidbar = ({ isDrawerOpen, openDrawer }) => {
       } bg-gray-900 transition-all duration-300 ease-in-out translate-x-0 z-40 shadow-lg overflow-y-auto`}
     >
       <div className={`p-4 ${!isDrawerOpen && "flex flex-col items-center"}`}>
-        {/* Titre Dashboard - visible uniquement en mode étendu */}
         {isDrawerOpen && (
           <div className="mb-6">
             <Typography variant="h5" className="text-white font-bold">
@@ -121,7 +171,7 @@ const Sidbar = ({ isDrawerOpen, openDrawer }) => {
         )}
 
         <List className={`p-0 ${!isDrawerOpen && "w-full"}`}>
-          {/* Gérer les hôpitaux */}
+          {/* Section Gérer les hôpitaux/ambulances */}
           {isDrawerOpen ? (
             <ListItem
               className="p-3 hover:bg-gray-800 rounded-lg mb-2 text-white cursor-pointer"
@@ -129,12 +179,10 @@ const Sidbar = ({ isDrawerOpen, openDrawer }) => {
             >
               <div className="flex items-center w-full">
                 <ListItemPrefix>
-                  <BuildingOffice2Icon
-                    className={`${iconSize} ${iconColor} mr-3`}
-                  />
+                  <config.icon className={`${iconSize} ${iconColor} mr-3`} />
                 </ListItemPrefix>
                 <Typography className="mr-auto font-medium text-gray-200">
-                  Gérer les hôpitaux
+                  {config.label}
                 </Typography>
                 <ChevronDownIcon
                   className={`h-4 w-4 transition-transform duration-300 text-gray-400 ${
@@ -144,17 +192,17 @@ const Sidbar = ({ isDrawerOpen, openDrawer }) => {
               </div>
             </ListItem>
           ) : (
-            <Tooltip content="Gérer les hôpitaux" placement="right">
+            <Tooltip content={config.label} placement="right">
               <ListItem
                 className="p-3 hover:bg-gray-800 rounded-lg mb-3 text-white cursor-pointer flex justify-center"
                 onClick={() => openDrawer()}
               >
-                <BuildingOffice2Icon className={`${iconSize} ${iconColor}`} />
+                <config.icon className={`${iconSize} ${iconColor}`} />
               </ListItem>
             </Tooltip>
           )}
 
-          {/* Sous-menu des hôpitaux - uniquement visible en mode étendu */}
+          {/* Sous-menu des hôpitaux/ambulances */}
           {isDrawerOpen && (
             <div
               className={`overflow-hidden transition-all duration-300 ${
@@ -164,30 +212,88 @@ const Sidbar = ({ isDrawerOpen, openDrawer }) => {
               <List className="p-0 ml-4">
                 <ListItem
                   className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
-                  onClick={handleAddHospital}
+                  onClick={handleAdd}
                 >
                   <ListItemPrefix>
                     <PlusIcon className="h-5 w-5 text-gray-400 mr-3" />
                   </ListItemPrefix>
-                  <Typography className="text-gray-200">Ajouter</Typography>
+                  <Typography className="text-gray-200">
+                    {config.addLabel}
+                  </Typography>
                 </ListItem>
                 <ListItem
                   className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
-                  onClick={handleEditHospital}
+                  onClick={handleEdit}
                 >
                   <ListItemPrefix>
                     <PencilIcon className="h-5 w-5 text-gray-400 mr-3" />
                   </ListItemPrefix>
-                  <Typography className="text-gray-200">Modifier</Typography>
+                  <Typography className="text-gray-200">
+                    {config.editLabel}
+                  </Typography>
                 </ListItem>
                 <ListItem
                   className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
-                  onClick={handleDeleteHospital}
+                  onClick={handleDelete}
                 >
                   <ListItemPrefix>
                     <TrashIcon className="h-5 w-5 text-gray-400 mr-3" />
                   </ListItemPrefix>
-                  <Typography className="text-gray-200">Supprimer</Typography>
+                  <Typography className="text-gray-200">
+                    {config.deleteLabel}
+                  </Typography>
+                </ListItem>
+              </List>
+            </div>
+          )}
+
+          {/* Section Gérer les urgences */}
+          {isDrawerOpen ? (
+            <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-2 text-white cursor-pointer">
+              <ListItemPrefix>
+                <ExclamationTriangleIcon
+                  className={`${iconSize} ${iconColor} mr-3`}
+                />
+              </ListItemPrefix>
+              <Typography className="text-gray-200">
+                Gérer les urgences
+              </Typography>
+            </ListItem>
+          ) : (
+            <Tooltip content="Gérer les urgences" placement="right">
+              <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-3 text-white cursor-pointer flex justify-center">
+                <ExclamationTriangleIcon
+                  className={`${iconSize} ${iconColor}`}
+                />
+              </ListItem>
+            </Tooltip>
+          )}
+
+          {/* Sous-menu des urgences (seulement visible en mode ouvert) */}
+          {isDrawerOpen && (
+            <div className="overflow-hidden transition-all duration-300 max-h-48">
+              <List className="p-0 ml-4">
+                <ListItem
+                  className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
+                  onClick={handleAssignAmbulance}
+                >
+                  <ListItemPrefix>
+                    <PlusIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  </ListItemPrefix>
+                  <Typography className="text-gray-200">
+                    Assigner Ambulance
+                  </Typography>
+                </ListItem>
+                <ListItem
+                  className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
+                  onClick={handleUnassignAmbulance}
+                >
+                  <ListItemPrefix>
+                    <MinusIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  </ListItemPrefix>
+                  <Typography className="text-gray-200">
+                    Désassigner Ambulance
+                  </Typography>
                 </ListItem>
               </List>
             </div>
@@ -284,22 +390,23 @@ const Sidbar = ({ isDrawerOpen, openDrawer }) => {
           )}
         </List>
       </div>
+
       <Dialog open={formOpen} handler={() => setFormOpen(false)}>
         <HospitalForm
           mode={formMode}
           initialData={selectedHospital}
           onClose={() => setFormOpen(false)}
-          onSubmit={handleSubmitHospital}
+          onSubmit={handleSubmit}
+          entityType={mode}
         />
       </Dialog>
 
-      {/* Dialog de confirmation pour la suppression */}
       <ConfirmDialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleConfirmDelete}
-        title="Confirmer la suppression"
-        message="Êtes-vous sûr de vouloir supprimer cet hôpital ? Cette action est irréversible."
+        title={`Confirmer la suppression`}
+        message={config.deleteMessage}
       />
     </div>
   );

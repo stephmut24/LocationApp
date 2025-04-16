@@ -12,6 +12,7 @@ import Home from "./Pages/Home";
 import Login from "./Pages/Login";
 import "mapbox-gl/dist/mapbox-gl.css";
 import AdminDashboard from "./Pages/Dashboard/AdminDashboard";
+import HospitalDashboard from "./Pages/Dashboard/HospitalDashboard";
 import Loader from "./components/Loader";
 
 // Composant principal qui gère le routing + loader
@@ -36,7 +37,7 @@ const AppContent = () => {
       {loading && <Loader />}
       <NavList isDrawerOpen={isDrawerOpen} toggleDrawer={handleDrawerToggle} />
       <div
-        className={`pt-16 transition-all duration-300 ${
+        className={`pt- transition-all duration-300 ${
           isDrawerOpen ? "ml-64" : "ml-0"
         }`}
       >
@@ -47,6 +48,15 @@ const AppContent = () => {
             path="/admin"
             element={
               <AdminDashboard
+                isDrawerOpen={isDrawerOpen}
+                toggleDrawer={handleDrawerToggle}
+              />
+            }
+          />
+          <Route
+            path="/hopital"
+            element={
+              <HospitalDashboard
                 isDrawerOpen={isDrawerOpen}
                 toggleDrawer={handleDrawerToggle}
               />

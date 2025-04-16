@@ -64,7 +64,7 @@ const Login = () => {
       if (userData.role === "admin") {
         navigate("/admin");
       } else if (userData.role === "hospital") {
-        navigate("/hospital/dashboard");
+        navigate("/hospital");
       } else if (userData.role === "ambulance") {
         navigate("/ambulance/dashboard");
       } else {

@@ -6,6 +6,7 @@ import {
   Typography,
   Textarea,
   IconButton,
+  Alert,
 } from "@material-tailwind/react";
 import Map, { Marker } from "react-map-gl";
 import { MAPBOX_TOKEN } from "../utils/mapboxConfig.js";
@@ -28,7 +29,7 @@ const HospitalForm = ({
     email: initialData?.email || "",
     phone: initialData?.phone || "",
     address: initialData?.address || "",
-    location: initialData?.location?.coordinates || [29.2356, -1.6835], // Coordonnées par défaut centrées sur Goma
+    location: initialData?.location?.coordinates || [29.2356, -1.6835],
   });
 
   const [errors, setErrors] = useState({});
@@ -39,13 +40,20 @@ const HospitalForm = ({
     latitude: formData.location[1],
     zoom: 14,
   });
-
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [longitudeInput, setLongitudeInput] = useState(
     formData.location[0].toString()
   );
   const [latitudeInput, setLatitudeInput] = useState(
     formData.location[1].toString()
   );
+
+  // Pour assurer que la fermeture du formulaire se fait correctement
+  const handleClose = () => {
+    if (typeof onClose === "function") {
+      onClose();
+    }
+  };
 
   useEffect(() => {
     setViewState({
@@ -126,10 +134,27 @@ const HospitalForm = ({
     }
 
     try {
-      await onSubmit(formData);
-      onClose();
+      // S'assurer que onSubmit est une fonction avant de l'appeler
+      if (typeof onSubmit === "function") {
+        await onSubmit(formData);
+
+        // Afficher le message de succès
+        setShowSuccessMessage(true);
+
+        // Attendre un court délai puis fermer le formulaire
+        setTimeout(() => {
+          handleClose();
+        }, 2000);
+      } else {
+        console.error("onSubmit n'est pas une fonction");
+        // Dans le cas où onSubmit n'est pas une fonction, fermer quand même
+        setTimeout(() => {
+          handleClose();
+        }, 2000);
+      }
     } catch (error) {
       console.error("Erreur lors de la soumission:", error);
+      // Si une erreur se produit, laisser le formulaire ouvert
     } finally {
       setIsSubmitting(false);
     }
@@ -145,7 +170,7 @@ const HospitalForm = ({
           <IconButton
             variant="text"
             color="gray"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-full h-8 w-8 hover:bg-gray-800"
           >
             <XMarkIcon className="h-4 w-4 text-gray-300" />
@@ -153,7 +178,19 @@ const HospitalForm = ({
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 flex-1">
-          {/* Nom */}
+          {showSuccessMessage && (
+            <Alert
+              color="green"
+              className="mb-4"
+              /*open={showSuccessMessage}*/
+              onClose={() => setShowSuccessMessage(false)}
+            >
+              {mode === "add"
+                ? "Hôpital ajouté avec succès !"
+                : "Hôpital modifié avec succès !"}
+            </Alert>
+          )}
+
           <div>
             <Typography
               variant="small"
@@ -177,7 +214,6 @@ const HospitalForm = ({
             )}
           </div>
 
-          {/* Email */}
           <div>
             <Typography
               variant="small"
@@ -201,7 +237,7 @@ const HospitalForm = ({
               </Typography>
             )}
           </div>
-          {/* Phon number */}
+
           <div>
             <Typography
               variant="small"
@@ -232,7 +268,6 @@ const HospitalForm = ({
             )}
           </div>
 
-          {/* Adresse */}
           <div>
             <Typography
               variant="small"
@@ -255,7 +290,6 @@ const HospitalForm = ({
             )}
           </div>
 
-          {/* Coordonnées GPS */}
           <div>
             <Typography
               variant="small"
@@ -320,12 +354,11 @@ const HospitalForm = ({
             </Typography>
           </div>
 
-          {/* Boutons de soumission */}
           <div className="mt-auto pt-2 flex gap-3">
             <Button
               type="button"
               fullWidth
-              onClick={onClose}
+              onClick={handleClose}
               className="rounded-md bg-gray-700 hover:bg-gray-800 text-white py-2.5 text-sm font-medium border border-gray-600"
             >
               Annuler
