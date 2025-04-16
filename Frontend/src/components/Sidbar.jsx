@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Typography,
   List,
   ListItem,
   ListItemPrefix,
   Tooltip,
+  Dialog,
 } from "@material-tailwind/react";
 import {
   BuildingOffice2Icon,
@@ -18,13 +19,90 @@ import {
   ArrowRightOnRectangleIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
+import HospitalForm from "./HopitalForm";
+import ConfirmDialog from "./ConfirmDialog";
 
-const Sidbar = ({ isDrawerOpen, openDrawer, closeDrawer }) => {
-  const [isHospitalsOpen, setIsHospitalsOpen] = React.useState(false);
+const Sidbar = ({ isDrawerOpen, openDrawer }) => {
+  const [isHospitalsOpen, setIsHospitalsOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [formMode, setFormMode] = useState("add");
+  const [selectedHospital, setSelectedHospital] = useState(null);
 
   // Taille des icônes selon l'état de la sidebar
   const iconSize = isDrawerOpen ? "h-6 w-6" : "h-7 w-7";
   const iconColor = "text-gray-300"; // Légèrement plus clair pour une meilleure visibilité
+
+  const handleAddHospital = () => {
+    setFormMode("add");
+    setSelectedHospital(null);
+    setFormOpen(true);
+  };
+
+  const handleEditHospital = () => {
+    setFormMode("edit");
+    // Ici vous devriez sélectionner un hôpital à modifier
+    // Pour l'exemple, je crée un objet vide
+    setSelectedHospital({
+      name: "Nom de l'hôpital",
+      email: "email@exemple.com",
+      address: "Adresse de l'hôpital",
+      location: {
+        coordinates: [0, 0],
+      },
+    });
+    setFormOpen(true);
+  };
+
+  const handleDeleteHospital = () => {
+    setConfirmOpen(true);
+  };
+
+  const handleSubmitHospital = async (data) => {
+    try {
+      // Ici vous ferez l'appel API selon le mode
+      if (formMode === "add") {
+        // Appel à votre API pour ajouter un hôpital
+        const response = await fetch("/api/hospitals", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message);
+      } else {
+        // Appel à votre API pour modifier un hôpital
+        const response = await fetch(`/api/hospitals/${selectedHospital._id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message);
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      throw error;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      // Appel à votre API pour supprimer un hôpital
+      const response = await fetch(`/api/hospitals/${selectedHospital._id}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message);
+      setConfirmOpen(false);
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
 
   return (
     <div
@@ -84,19 +162,28 @@ const Sidbar = ({ isDrawerOpen, openDrawer, closeDrawer }) => {
               }`}
             >
               <List className="p-0 ml-4">
-                <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer">
+                <ListItem
+                  className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
+                  onClick={handleAddHospital}
+                >
                   <ListItemPrefix>
                     <PlusIcon className="h-5 w-5 text-gray-400 mr-3" />
                   </ListItemPrefix>
                   <Typography className="text-gray-200">Ajouter</Typography>
                 </ListItem>
-                <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer">
+                <ListItem
+                  className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
+                  onClick={handleEditHospital}
+                >
                   <ListItemPrefix>
                     <PencilIcon className="h-5 w-5 text-gray-400 mr-3" />
                   </ListItemPrefix>
                   <Typography className="text-gray-200">Modifier</Typography>
                 </ListItem>
-                <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer">
+                <ListItem
+                  className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
+                  onClick={handleDeleteHospital}
+                >
                   <ListItemPrefix>
                     <TrashIcon className="h-5 w-5 text-gray-400 mr-3" />
                   </ListItemPrefix>
@@ -197,6 +284,23 @@ const Sidbar = ({ isDrawerOpen, openDrawer, closeDrawer }) => {
           )}
         </List>
       </div>
+      <Dialog open={formOpen} handler={() => setFormOpen(false)}>
+        <HospitalForm
+          mode={formMode}
+          initialData={selectedHospital}
+          onClose={() => setFormOpen(false)}
+          onSubmit={handleSubmitHospital}
+        />
+      </Dialog>
+
+      {/* Dialog de confirmation pour la suppression */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Confirmer la suppression"
+        message="Êtes-vous sûr de vouloir supprimer cet hôpital ? Cette action est irréversible."
+      />
     </div>
   );
 };

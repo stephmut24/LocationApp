@@ -1,20 +1,81 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [loginError, setLoginError] = useState("");
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("Login data:", data);
-    // Simuler une connexion réussie
-    navigate("/admin"); // Redirection après connexion
+    setLoginError(""); // Réinitialiser les erreurs précédentes
+
+    try {
+      // Dans un environnement réel, vous feriez un appel API ici
+      // Simulons une vérification d'authentification et récupération du rôle
+
+      // Simulation de la réponse du backend
+      let userData;
+
+      // Pour la démo : simulation de différents rôles selon l'email
+      if (data.email.includes("admin")) {
+        userData = {
+          id: "admin_id",
+          email: data.email,
+          name: "Admin",
+          role: "admin",
+        };
+      } else if (data.email.includes("hospital")) {
+        userData = {
+          id: "hospital_id",
+          email: data.email,
+          name: "Hôpital",
+          role: "hospital",
+        };
+      } else if (data.email.includes("ambulance")) {
+        userData = {
+          id: "ambulance_id",
+          email: data.email,
+          name: "Ambulance",
+          role: "ambulance",
+        };
+      } else {
+        userData = {
+          id: "user_id",
+          email: data.email,
+          name: "Utilisateur",
+          role: "utilisateur",
+        };
+      }
+
+      // Enregistrement des informations de l'utilisateur
+      login(userData);
+
+      // Redirection en fonction du rôle retourné par le backend
+      if (userData.role === "admin") {
+        navigate("/admin");
+      } else if (userData.role === "hospital") {
+        navigate("/hospital/dashboard");
+      } else if (userData.role === "ambulance") {
+        navigate("/ambulance/dashboard");
+      } else {
+        navigate("/"); // Utilisateur standard
+      }
+    } catch (error) {
+      setLoginError(
+        "Erreur d'authentification. Veuillez vérifier vos identifiants."
+      );
+      console.error("Erreur de connexion:", error);
+    }
   };
 
   return (
@@ -33,6 +94,12 @@ const Login = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 shadow-xl rounded-xl sm:px-10 border border-gray-100">
+          {loginError && (
+            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+              {loginError}
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
               <label
@@ -44,7 +111,13 @@ const Login = () => {
               <input
                 id="email"
                 type="email"
-                {...register("email", { required: "Email requis" })}
+                {...register("email", {
+                  required: "Email requis",
+                  pattern: {
+                    value: /^\S+@\S+\.\S+$/,
+                    message: "Format d'email invalide",
+                  },
+                })}
                 className={`w-full px-4 py-3 rounded-lg border ${
                   errors.email ? "border-red-500" : "border-gray-300"
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
@@ -96,13 +169,13 @@ const Login = () => {
 
             <div className="flex items-center">
               <input
-                id="remember-me"
-                name="remember-me"
+                id="rememberMe"
+                {...register("rememberMe")}
                 type="checkbox"
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label
-                htmlFor="remember-me"
+                htmlFor="rememberMe"
                 className="ml-2 block text-sm text-gray-700"
               >
                 Se souvenir de moi

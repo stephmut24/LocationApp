@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Building2, Users, Ambulance, Settings } from "lucide-react";
 import Sidbar from "../../components/Sidbar";
-import NavList from "../../components/NavList"; // Assurez-vous que le chemin d'importation est correct
+import NavList from "../../components/NavList";
+import ShowMap from "../../components/ShowMap";
 
 const AdminDashboard = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -14,20 +15,21 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar avec contrôle sur l'état de la sidebar */}
-      <NavList 
-        isDrawerOpen={isDrawerOpen} 
-        toggleDrawer={handleSidebarToggle} 
-      />
-      
+      <NavList isDrawerOpen={isDrawerOpen} toggleDrawer={handleSidebarToggle} />
+
       {/* Sidebar qui prend l'état du dashboard */}
       <Sidbar
         isDrawerOpen={isDrawerOpen}
         openDrawer={() => setIsDrawerOpen(true)}
         closeDrawer={() => setIsDrawerOpen(false)}
       />
-      
+
       {/* Contenu principal avec décalage dynamique */}
-      <div className={`pt-20 transition-all duration-300 ${isDrawerOpen ? 'ml-64' : 'ml-16'}`}>
+      <div
+        className={`pt-20 transition-all duration-300 ${
+          isDrawerOpen ? "ml-64" : "ml-16"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-1">
             <h1 className="text-xl font-bold text-gray-900">
@@ -64,8 +66,12 @@ const AdminDashboard = () => {
           </div>
 
           {/* Espace pour la carte Mapbox */}
-          <div className="bg-white rounded-lg shadow-md h-96">
-            {/* La carte Mapbox sera ajoutée ici */}
+          <div className="flex gap-4">
+            <div className="bg-white rounded-lg shadow-md h-96 flex-1">
+              {/* La carte Mapbox sera ajoutée ici */}
+              <ShowMap />
+            </div>
+            <div className="bg-white rounded-lg shadow-md h-96 w-1/3"></div>
           </div>
         </div>
       </div>
