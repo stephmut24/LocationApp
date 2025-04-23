@@ -13,7 +13,9 @@ import Login from "./Pages/Login";
 import "mapbox-gl/dist/mapbox-gl.css";
 import AdminDashboard from "./Pages/Dashboard/AdminDashboard";
 import HospitalDashboard from "./Pages/Dashboard/HospitalDashboard";
+import AmbulanceDashboard from "./Pages/Dashboard/AmbulanceDashboard";
 import Loader from "./components/Loader";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Composant principal qui gère le routing + loader
 const AppContent = () => {
@@ -37,7 +39,7 @@ const AppContent = () => {
       {loading && <Loader />}
       <NavList isDrawerOpen={isDrawerOpen} toggleDrawer={handleDrawerToggle} />
       <div
-        className={`pt- transition-all duration-300 ${
+        className={`pt-5 transition-all duration-300 ${
           isDrawerOpen ? "ml-64" : "ml-0"
         }`}
       >
@@ -47,19 +49,36 @@ const AppContent = () => {
           <Route
             path="/admin"
             element={
-              <AdminDashboard
-                isDrawerOpen={isDrawerOpen}
-                toggleDrawer={handleDrawerToggle}
-              />
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard
+                  isDrawerOpen={isDrawerOpen}
+                  toggleDrawer={handleDrawerToggle}
+                />
+              </ProtectedRoute>
             }
           />
+
           <Route
             path="/hopital"
             element={
-              <HospitalDashboard
-                isDrawerOpen={isDrawerOpen}
-                toggleDrawer={handleDrawerToggle}
-              />
+              <ProtectedRoute allowedRoles={["hospital"]}>
+                <HospitalDashboard
+                  isDrawerOpen={isDrawerOpen}
+                  toggleDrawer={handleDrawerToggle}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/ambulance"
+            element={
+              <ProtectedRoute allowedRoles={["ambulance"]}>
+                <AmbulanceDashboard
+                  isDrawerOpen={isDrawerOpen}
+                  toggleDrawer={handleDrawerToggle}
+                />
+              </ProtectedRoute>
             }
           />
           {/* Ajoutez d'autres routes ici */}

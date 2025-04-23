@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Building2, Users, Ambulance, Settings } from "lucide-react";
+
 import Sidbar from "../../components/Sidbar";
 import NavList from "../../components/NavList";
 import ShowMap from "../../components/ShowMap";
@@ -66,12 +67,10 @@ const AdminDashboard = () => {
           </div>
 
           {/* Espace pour la carte Mapbox */}
-          <div className="flex gap-4">
-            <div className="bg-white rounded-lg shadow-md h-96 flex-1">
-              {/* La carte Mapbox sera ajoutée ici */}
-              <ShowMap />
-            </div>
-            <div className="bg-white rounded-lg shadow-md h-96 w-1/3"></div>
+
+          <div className="bg-white rounded-lg shadow-md h-96 flex-1">
+            {/* La carte Mapbox sera ajoutée ici */}
+            <ShowMap />
           </div>
         </div>
       </div>

@@ -1,55 +1,98 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import authService from "../Services/authService";
 
 // Créer le contexte
 const AuthContext = createContext();
 
 // Hook personnalisé
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth doit être utilisé dans un AuthProvider");
+  }
+  return context;
+};
 
 // Fournisseur du contexte
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Charger les données utilisateur depuis localStorage au démarrage
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    const initializeAuth = async () => {
       try {
-        setUser(JSON.parse(storedUser));
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+        }
       } catch (error) {
-        console.error(
-          "Erreur lors du chargement des données utilisateur:",
-          error
-        );
+        console.error("Erreur lors de l'initialisation:", error);
         localStorage.removeItem("user");
+        localStorage.removeItem("token");
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = (userData) => {
-    // Stocker les données utilisateur dans le state et localStorage
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+  const login = async (credentials) => {
+    try {
+      setError(null);
+      const response = await authService.login(credentials);
+      setUser(response.user);
+      return response;
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    }
   };
 
-  const logout = () => {
-    // Effacer les données utilisateur du state et localStorage
-    setUser(null);
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      await authService.logout();
+      setUser(null);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+    }
   };
 
-  // Fonction pour mettre à jour les données utilisateur
   const updateUser = (newData) => {
-    const updatedUser = { ...user, ...newData };
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
+    try {
+      const updatedUser = { ...user, ...newData };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour:", error);
+      setError("Erreur lors de la mise à jour du profil");
+    }
+  };
+
+  const isAuthenticated = () => {
+    return !!user && !!localStorage.getItem("token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
-      {children}
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        updateUser,
+        loading,
+        error,
+        isAuthenticated,
+      }}
+    >
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;

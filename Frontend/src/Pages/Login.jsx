@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+//import { authService } from "../Services/authService";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,65 +17,67 @@ const Login = () => {
   } = useForm();
 
   const onSubmit = async (data) => {
-    console.log("Login data:", data);
     setLoginError(""); // Réinitialiser les erreurs précédentes
+    console.log("Tentative de connexion avec:", { email: data.email }); // Log sécurisé
 
     try {
-      // Dans un environnement réel, vous feriez un appel API ici
-      // Simulons une vérification d'authentification et récupération du rôle
+      // Formatage explicite des données
+      const loginData = {
+        email: data.email,
+        password: data.password,
+      };
 
-      // Simulation de la réponse du backend
-      let userData;
+      console.log("Données de connexion:", {
+        email: loginData.email,
+        hasPassword: !!loginData.password,
+      });
+      const response = await login(loginData);
 
-      // Pour la démo : simulation de différents rôles selon l'email
-      if (data.email.includes("admin")) {
-        userData = {
-          id: "admin_id",
-          email: data.email,
-          name: "Admin",
-          role: "admin",
-        };
-      } else if (data.email.includes("hospital")) {
-        userData = {
-          id: "hospital_id",
-          email: data.email,
-          name: "Hôpital",
-          role: "hospital",
-        };
-      } else if (data.email.includes("ambulance")) {
-        userData = {
-          id: "ambulance_id",
-          email: data.email,
-          name: "Ambulance",
-          role: "ambulance",
-        };
-      } else {
-        userData = {
-          id: "user_id",
-          email: data.email,
-          name: "Utilisateur",
-          role: "utilisateur",
-        };
+      const { token, user, success } = response;
+      // Simuler la réponse du serveur
+
+      // Vérification détaillée de la réponse
+      if (!success || !token || !user) {
+        throw new Error("Réponse invalide du serveur");
       }
 
-      // Enregistrement des informations de l'utilisateur
-      login(userData);
+      // Stockage du token et des données utilisateur
 
-      // Redirection en fonction du rôle retourné par le backend
-      if (userData.role === "admin") {
-        navigate("/admin");
-      } else if (userData.role === "hospital") {
-        navigate("/hospital");
-      } else if (userData.role === "ambulance") {
-        navigate("/ambulance/dashboard");
-      } else {
-        navigate("/"); // Utilisateur standard
+      // Log des données stockées
+      console.log("Données stockées:", {
+        hasToken: !!token,
+        userRole: user.role,
+      });
+
+      // Mise à jour du contexte d'authentification
+      //await login({ token, user });
+
+      // Redirection basée sur le rôle
+      switch (user.role) {
+        case "admin":
+          navigate("/admin", { replace: true });
+          break;
+        case "hospital":
+          navigate("/hopital", { replace: true });
+          break;
+        case "ambulance":
+          navigate("/ambulance", { replace: true });
+          break;
+        default:
+          throw new Error(`Rôle non reconnu: ${user.role}`);
       }
     } catch (error) {
+      console.error("Erreur de connexion:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
       setLoginError(
-        "Erreur d'authentification. Veuillez vérifier vos identifiants."
+        error.response?.data?.message ||
+          error.message ||
+          "Erreur d'authentification"
       );
-      console.error("Erreur de connexion:", error);
     }
   };
 

@@ -32,6 +32,7 @@ const Sidbar = ({
   mode = "hospital",
 }) => {
   const [isHospitalsOpen, setIsHospitalsOpen] = useState(false);
+  const [isEmergenciesOpen, setIsEmergenciesOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formMode, setFormMode] = useState("add");
@@ -155,6 +156,9 @@ const Sidbar = ({
     }
   };
 
+  // Détermine si on est dans l'interface hôpital (avec gestion d'ambulances)
+  const isHospitalInterface = mode === "ambulance";
+
   return (
     <div
       className={`fixed top-16 left-0 h-[calc(100vh-4rem)] ${
@@ -247,56 +251,74 @@ const Sidbar = ({
             </div>
           )}
 
-          {/* Section Gérer les urgences */}
-          {isDrawerOpen ? (
-            <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-2 text-white cursor-pointer">
-              <ListItemPrefix>
-                <ExclamationTriangleIcon
-                  className={`${iconSize} ${iconColor} mr-3`}
-                />
-              </ListItemPrefix>
-              <Typography className="text-gray-200">
-                Gérer les urgences
-              </Typography>
-            </ListItem>
-          ) : (
-            <Tooltip content="Gérer les urgences" placement="right">
-              <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-3 text-white cursor-pointer flex justify-center">
-                <ExclamationTriangleIcon
-                  className={`${iconSize} ${iconColor}`}
-                />
-              </ListItem>
-            </Tooltip>
-          )}
+          {/* Section Gérer les urgences - Seulement visible dans l'interface hôpital */}
+          {isHospitalInterface && (
+            <>
+              {isDrawerOpen ? (
+                <ListItem
+                  className="p-3 hover:bg-gray-800 rounded-lg mb-2 text-white cursor-pointer"
+                  onClick={() => setIsEmergenciesOpen(!isEmergenciesOpen)}
+                >
+                  <div className="flex items-center w-full">
+                    <ListItemPrefix>
+                      <ExclamationTriangleIcon
+                        className={`${iconSize} ${iconColor} mr-3`}
+                      />
+                    </ListItemPrefix>
+                    <Typography className="mr-auto font-medium text-gray-200">
+                      Gérer les urgences
+                    </Typography>
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform duration-300 text-gray-400 ${
+                        isEmergenciesOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </ListItem>
+              ) : (
+                <Tooltip content="Gérer les urgences" placement="right">
+                  <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-3 text-white cursor-pointer flex justify-center">
+                    <ExclamationTriangleIcon
+                      className={`${iconSize} ${iconColor}`}
+                    />
+                  </ListItem>
+                </Tooltip>
+              )}
 
-          {/* Sous-menu des urgences (seulement visible en mode ouvert) */}
-          {isDrawerOpen && (
-            <div className="overflow-hidden transition-all duration-300 max-h-48">
-              <List className="p-0 ml-4">
-                <ListItem
-                  className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
-                  onClick={handleAssignAmbulance}
+              {/* Sous-menu des urgences (seulement visible en mode ouvert et dans l'interface hôpital) */}
+              {isDrawerOpen && (
+                <div
+                  className={`overflow-hidden transition-all duration-300 ${
+                    isEmergenciesOpen ? "max-h-48" : "max-h-0"
+                  }`}
                 >
-                  <ListItemPrefix>
-                    <PlusIcon className="h-5 w-5 text-gray-400 mr-3" />
-                  </ListItemPrefix>
-                  <Typography className="text-gray-200">
-                    Assigner Ambulance
-                  </Typography>
-                </ListItem>
-                <ListItem
-                  className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
-                  onClick={handleUnassignAmbulance}
-                >
-                  <ListItemPrefix>
-                    <MinusIcon className="h-5 w-5 text-gray-400 mr-3" />
-                  </ListItemPrefix>
-                  <Typography className="text-gray-200">
-                    Désassigner Ambulance
-                  </Typography>
-                </ListItem>
-              </List>
-            </div>
+                  <List className="p-0 ml-4">
+                    <ListItem
+                      className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
+                      onClick={handleAssignAmbulance}
+                    >
+                      <ListItemPrefix>
+                        <PlusIcon className="h-5 w-5 text-gray-400 mr-3" />
+                      </ListItemPrefix>
+                      <Typography className="text-gray-200">
+                        Assigner Ambulance
+                      </Typography>
+                    </ListItem>
+                    <ListItem
+                      className="p-3 hover:bg-gray-800 rounded-lg mb-1 text-white cursor-pointer"
+                      onClick={handleUnassignAmbulance}
+                    >
+                      <ListItemPrefix>
+                        <MinusIcon className="h-5 w-5 text-gray-400 mr-3" />
+                      </ListItemPrefix>
+                      <Typography className="text-gray-200">
+                        Désassigner Ambulance
+                      </Typography>
+                    </ListItem>
+                  </List>
+                </div>
+              )}
+            </>
           )}
 
           {/* Afficher la carte */}

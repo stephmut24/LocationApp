@@ -10,4 +10,16 @@ router.post('/login', login);
 // Routes protégées
 router.post('/change-password', protect, changePassword);
 
+
+
+// Route de test pour vérifier l'authentification
+router.get('/me', protect, (req, res) => {
+  res.json({ 
+    status: 'success',
+    data: {
+      user: req.user
+    }
+  });
+});
+
 export default router
