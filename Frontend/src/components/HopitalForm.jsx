@@ -12,6 +12,7 @@ import Map, { Marker } from "react-map-gl";
 import { MAPBOX_TOKEN } from "../utils/mapboxConfig.js";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import hospitalService from "../Services/hopitalService.js";
 
 const styleOptions = {
   standard: "mapbox://styles/steph-24/cm9gwmiai007r01sg1nk5d0pf",
@@ -33,6 +34,7 @@ const HospitalForm = ({
   });
 
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mapStyle, setMapStyle] = useState("standard");
   const [viewState, setViewState] = useState({
@@ -120,41 +122,65 @@ const HospitalForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setServerError("");
 
     const newErrors = {};
     if (!formData.name) newErrors.name = "Le nom est requis";
     if (!formData.email) newErrors.email = "L'email est requis";
     if (!formData.address) newErrors.address = "L'adresse est requise";
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setIsSubmitting(false);
-      return;
-    }
+    if (!formData.phone) newErrors.phone = "Le numéro de téléphone est requis";
+    if (!formData.location[0] || !formData.location[1])
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        setIsSubmitting(false);
+        return;
+      }
+    setIsSubmitting(true);
 
     try {
       // S'assurer que onSubmit est une fonction avant de l'appeler
-      if (typeof onSubmit === "function") {
-        await onSubmit(formData);
+      if (mode === "add") {
+        // Appel au service pour ajouter un hôpital
+        const response = await hospitalService.addHospital({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          location: formData.location,
+        });
 
-        // Afficher le message de succès
-        setShowSuccessMessage(true);
-
-        // Attendre un court délai puis fermer le formulaire
-        setTimeout(() => {
-          handleClose();
-        }, 2000);
+        // Si onSubmit est fourni, l'appeler aussi pour mettre à jour l'état du parent
+        if (typeof onSubmit === "function") {
+          onSubmit(response.data);
+        }
       } else {
-        console.error("onSubmit n'est pas une fonction");
-        // Dans le cas où onSubmit n'est pas une fonction, fermer quand même
-        setTimeout(() => {
-          handleClose();
-        }, 2000);
+        // Appel au service pour modifier un hôpital
+        const response = await hospitalService.updateHospital(initialData._id, {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          location: formData.location,
+        });
+
+        // Si onSubmit est fourni, l'appeler aussi pour mettre à jour l'état du parent
+        if (typeof onSubmit === "function") {
+          onSubmit(response.data);
+        }
       }
+
+      // Afficher le message de succès
+      setShowSuccessMessage(true);
+
+      // Attendre un court délai puis fermer le formulaire
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
     } catch (error) {
       console.error("Erreur lors de la soumission:", error);
-      // Si une erreur se produit, laisser le formulaire ouvert
+      setServerError(
+        error.message || "Une erreur s'est produite lors de l'enregistrement"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -190,6 +216,17 @@ const HospitalForm = ({
                 : "Hôpital modifié avec succès !"}
             </Alert>
           )}
+          {serverError && (
+            <Alert
+              color="red"
+              className="mb-4"
+              onClose={() => setServerError("")}
+            >
+              {serverError}
+            </Alert>
+          )}
+
+          {/* Champs du formulaire */}
 
           <div>
             <Typography

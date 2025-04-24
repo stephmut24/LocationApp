@@ -5,7 +5,7 @@ import * as emailService from '../utils/emailService.js';
 // Ajouter un nouvel hôpital
 export const addHospital = async (req, res) => {
   try {
-    const { name, email, address, location } = req.body;
+    const { name, email,phone, address, location } = req.body;
     
     // Vérifier si l'hôpital existe déjà
     const existingHospital = await Hospital.findOne({ email });
@@ -20,6 +20,7 @@ export const addHospital = async (req, res) => {
     const hospital = new Hospital({
       name,
       email,
+      phone,
       address,
       location: {
         type: 'Point',
@@ -48,7 +49,10 @@ export const addHospital = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Hôpital ajouté avec succès',
-      data: hospital
+      data: {
+        ...hospital._doc,
+        location: hospital.location.coordinates // Envoyer les coordonnées
+      }
     });
   } catch (error) {
     console.error('Add hospital error:', error);

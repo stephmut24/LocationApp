@@ -13,6 +13,11 @@ const HospitalSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  phone: {
+    type: String,
+    required: true, 
+    trim: true
+  },
   address: {
     type: String,
     required: true

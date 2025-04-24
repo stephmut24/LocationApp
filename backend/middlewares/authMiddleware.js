@@ -1,58 +1,4 @@
-{/*import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
 
-export const protect = async (req, res, next) => {
-  try {
-    let token;
-    
-    // Vérifier la présence du token dans l'en-tête
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-    
-    if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Accès non autorisé, token manquant' 
-      });
-    }
-    
-    // Vérifier le token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Trouver l'utilisateur par ID
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Utilisateur non trouvé' 
-      });
-    }
-    
-    // Ajouter l'utilisateur à la requête
-    req.user = decoded;
-    next();
-  } catch (error) {
-    console.error('Auth middleware error:', error);
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Token invalide ou expiré' 
-    });
-  }
-};
-
-// Middleware pour vérifier les rôles
-export const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Accès non autorisé pour ce rôle' 
-      });
-    }
-    next();
-  };
-};*/}
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
@@ -112,19 +58,47 @@ export const protect = async (req, res, next) => {
   }
 };
 
+// ...existing code...
+
 export const authorize = (...roles) => {
-  return (req, res, next) => {
-    console.log('Vérification du rôle:', req.user.role); // Log pour déboguer
-    console.log('Rôles autorisés:', roles); // Log pour déboguer
-    
-    if (!roles.includes(req.user.role)) {
-      console.log('Accès refusé pour le rôle:', req.user.role); // Log pour déboguer
-      return res.status(403).json({ 
-        success: false, 
-        message: `Accès non autorisé. Rôle requis: ${roles.join(', ')}` 
+  return async (req, res, next) => {
+    try {
+      // S'assurer que le middleware protect a été exécuté
+      if (!req.headers.authorization) {
+        console.log('Pas de token dans les headers');
+        return res.status(401).json({
+          success: false,
+          message: 'Token non fourni'
+        });
+      }
+
+      // Vérifier si l'utilisateur est connecté
+      if (!req.user) {
+        console.log('Utilisateur non authentifié');
+        return res.status(401).json({
+          success: false,
+          message: 'Utilisateur non authentifié'
+        });
+      }
+
+      // Vérifier le rôle
+      if (!roles.includes(req.user.role)) {
+        console.log(`Rôle ${req.user.role} non autorisé. Rôles permis:`, roles);
+        return res.status(403).json({
+          success: false,
+          message: `Accès non autorisé. Rôle requis: ${roles.join(', ')}`
+        });
+      }
+
+      // Si tout est OK, continuer
+      console.log(`Accès autorisé pour ${req.user.email} avec rôle ${req.user.role}`);
+      next();
+    } catch (error) {
+      console.error('Erreur dans authorize:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la vérification des autorisations'
       });
     }
-    console.log('Autorisation accordée'); // Log pour déboguer
-    next();
   };
 };

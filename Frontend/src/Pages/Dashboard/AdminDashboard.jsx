@@ -1,12 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Building2, Users, Ambulance, Settings } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import Sidbar from "../../components/Sidbar";
 import NavList from "../../components/NavList";
 import ShowMap from "../../components/ShowMap";
 
 const AdminDashboard = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAuthenticated() || user?.role !== "admin") {
+      navigate("/login");
+    }
+  }, [isAuthenticated, user, navigate]);
 
   // Fonction pour gérer le toggle depuis la sidebar
   const handleSidebarToggle = () => {
