@@ -3,6 +3,7 @@ import mapboxgl from "mapbox-gl";
 import { MAPBOX_TOKEN } from "../utils/mapboxConfig";
 import hospitalService from "../Services/hopitalService";
 import { createCustomMarker } from "./CustomMarker";
+import { useAuth } from "../context/AuthContext";
 
 const MAP_CENTER = [29.2204, -1.6585]; // Goma ?
 const ZOOM_LEVEL = 12;
@@ -27,6 +28,7 @@ const validateCoordinates = (coordinates) => {
 
 const ShowMap = () => {
   const mapContainerRef = useRef(null);
+  const { user } = useAuth(); // Récupérer l'utilisateur depuis le localStorage
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const [mapStyle, setMapStyle] = useState("standard");
@@ -65,86 +67,113 @@ const ShowMap = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        // Modifié pour gérer directement la réponse
-        const response = await hospitalService.getHospitals();
-        console.log("Réponse du service:", response);
+        if (user?.role === "hospital") {
+          const response = await hospitalService.getHospitals();
+          console.log("Données brutes reçues:", response);
 
-        // Adaptez cette ligne selon la structure réelle de votre réponse
-        const hospitalData = response.data || response || [];
+          // Vérifier la structure de la réponse
+          const ambulances = response?.data?.data || [];
+          console.log("Ambulances extraites:", ambulances);
 
-        setLocations((prev) => ({
-          ...prev,
-          hospitals: hospitalData,
-        }));
+          setLocations((prev) => ({
+            ...prev,
+            ambulances: Array.isArray(ambulances) ? ambulances : [],
+          }));
+        } else {
+          const response = await hospitalService.getHospitals();
+          setLocations((prev) => ({
+            ...prev,
+            hospitals: response?.data?.data || [],
+          }));
+        }
       } catch (error) {
         console.error("Erreur chargement données:", error);
+        // Réinitialiser les locations en cas d'erreur
+        setLocations({
+          hospitals: [],
+          ambulances: [],
+          patients: [],
+        });
       }
     };
 
     fetchLocations();
-    const interval = setInterval(fetchLocations, 30000);
+    const interval = setInterval(fetchLocations, 300000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
-  // Ajouter après l'effet qui récupère les données
-
-  // Effet pour mettre à jour les marqueurs
   useEffect(() => {
     if (!mapRef.current) return;
 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    console.log("Total des hôpitaux à ajouter:", locations.hospitals.length);
+    if (user?.role === "hospital" && Array.isArray(locations.ambulances)) {
+      // Affichage des ambulances pour l'hôpital
+      console.log("Ambulances à afficher:", locations.ambulances);
+      locations.ambulances.forEach((ambulance) => {
+        if (!ambulance || !ambulance.location) {
+          console.warn("Ambulance invalide:", ambulance);
+          return;
+        }
 
-    locations.hospitals.forEach((hospital) => {
-      const coordinates = hospital.location?.coordinates;
+        const coordinates = ambulance.location?.coordinates;
+        if (!validateCoordinates(coordinates)) {
+          console.warn(
+            "Coordonnées invalides pour l'ambulance:",
+            ambulance.registrationNumber
+          );
+          return;
+        }
 
-      if (!validateCoordinates(coordinates)) {
-        console.error(
-          `Coordonnées invalides pour ${hospital.name}:`,
-          coordinates
-        );
-        return;
-      }
-
-      const [longitude, latitude] = coordinates;
-      console.log(
-        `Ajout marqueur: ${hospital.name} à [${longitude}, ${latitude}]`
-      );
-
-      try {
-        const marker = new mapboxgl.Marker(createCustomMarker("hospital"))
-          .setLngLat([longitude, latitude])
+        const marker = new mapboxgl.Marker(createCustomMarker("ambulance"))
+          .setLngLat(coordinates)
           .setPopup(
-            new mapboxgl.Popup({
-              offset: 25,
-              className: "rounded-lg shadow-lg",
-            }).setHTML(`
-              <div class="p-3">
-                <h3 class="text-lg font-bold text-gray-900 mb-1">${
-                  hospital.name
-                }</h3>
-                <p class="text-sm text-gray-600">${hospital.address}</p>
-                <div class="mt-2 text-sm text-gray-500">
-                  <p>📞 ${hospital.phone || "N/A"}</p>
-                  <p>📧 ${hospital.email || "N/A"}</p>
+            new mapboxgl.Popup({ offset: 25 }).setHTML(`
+                <div class="p-3">
+                  <h3 class="font-bold">${ambulance.registrationNumber}</h3>
+                  <p>Chauffeur: ${ambulance.driverEmail}</p>
+                  <p>Téléphone: ${ambulance.driverPhone}</p>
+                  <p>Status: ${ambulance.status}</p>
                 </div>
-              </div>
-            `)
+              `)
           )
           .addTo(mapRef.current);
 
-        const pos = marker.getLngLat();
-        console.log(`Position réelle du marqueur: [${pos.lng}, ${pos.lat}]`);
+        markersRef.current.push(marker);
+      });
+    } else if (user?.role === "admin" && Array.isArray(locations.hospitals)) {
+      // Affichage des hôpitaux pour l'admin
+      console.log("Hôpitaux à afficher:", locations.hospitals);
+      locations.hospitals.forEach((hospital) => {
+        if (!hospital || !hospital.location) {
+          console.warn("Hôpital invalide:", hospital);
+          return;
+        }
+
+        const coordinates = hospital.location?.coordinates;
+        if (!validateCoordinates(coordinates)) {
+          console.warn("Coordonnées invalides pour l'hôpital:", hospital.name);
+          return;
+        }
+
+        const marker = new mapboxgl.Marker(createCustomMarker("hospital"))
+          .setLngLat(coordinates)
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(`
+                <div class="p-3">
+                  <h3 class="font-bold">${hospital.name}</h3>
+                  <p>${hospital.address}</p>
+                  <p>Tél: ${hospital.phone}</p>
+                </div>
+              `)
+          )
+          .addTo(mapRef.current);
 
         markersRef.current.push(marker);
-      } catch (error) {
-        console.error(`Erreur marqueur pour ${hospital.name}:`, error);
-      }
-    });
-  }, [locations]);
-
+      });
+    }
+  }, [locations, user]);
   return (
     <div className="relative w-full h-full">
       {/* Carte */}

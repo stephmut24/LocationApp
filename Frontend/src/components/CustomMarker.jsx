@@ -1,6 +1,9 @@
+import { Hospital, Ambulance } from "lucide-react";
+import ReactDOMServer from "react-dom/server";
+
 const MARKER_COLORS = {
-  hospital: "#e53e3e", // Rouge pour l'hôpital
-  ambulance: "#38a169",
+  hospital: "#e53e3e",
+  ambulance: "#e53e3e",
   patient: "#4299e1",
 };
 
@@ -9,52 +12,33 @@ const createCustomMarker = (type) => {
   el.className = "custom-marker";
 
   if (type === "hospital") {
-    // Style spécifique pour la croix d'hôpital
-    el.style.width = "30px";
-    el.style.height = "30px";
+    el.style.width = "32px";
+    el.style.height = "32px";
     el.style.position = "relative";
-    el.style.backgroundColor = "white";
-    el.style.borderRadius = "50%";
-    el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
-    el.style.cursor = "pointer";
-
-    // Créer la croix rouge
-    const cross = document.createElement("div");
-    cross.style.position = "absolute";
-    cross.style.top = "50%";
-    cross.style.left = "50%";
-    cross.style.transform = "translate(-50%, -50%)";
-    cross.style.width = "20px";
-    cross.style.height = "20px";
-    cross.innerHTML = `
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <path
-          d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2z"
-          fill="#e53e3e"
-        />
-        <path
-          d="M8 12h8M12 8v8"
-          stroke="white"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-      </svg>
-    `;
-
-    el.appendChild(cross);
+    // Utiliser l'icône Hospital de Lucide React
+    el.innerHTML = ReactDOMServer.renderToString(
+      <Hospital size={32} color={MARKER_COLORS.hospital} strokeWidth={2} />
+    );
+  } else if (type === "ambulance") {
+    el.style.width = "20px";
+    el.style.height = "20px";
+    el.style.position = "relative";
+    // Utiliser l'icône Ambulance de Lucide React
+    el.innerHTML = ReactDOMServer.renderToString(
+      <Ambulance size={32} color={MARKER_COLORS.ambulance} strokeWidth={2} />
+    );
   } else {
-    // Style par défaut pour les autres types de marqueurs
-    el.style.width = "30px";
-    el.style.height = "30px";
+    // Style pour les patients (reste inchangé)
+    el.style.width = "24px";
+    el.style.height = "24px";
     el.style.backgroundColor = MARKER_COLORS[type] || "#718096";
     el.style.borderRadius = "50%";
     el.style.border = "2px solid white";
     el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
-    el.style.cursor = "pointer";
-
-    // Conserver le code existant pour les autres types de marqueurs
-    // ...existing code for other marker types...
   }
+
+  el.style.cursor = "pointer";
+  el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
 
   return el;
 };

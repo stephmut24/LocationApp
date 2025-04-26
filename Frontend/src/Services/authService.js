@@ -22,6 +22,27 @@ export const authService = {
     }
   },
 
+  verifyToken: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return { success: false, message: 'Aucun token trouvé' };
+      }
+
+      const response = await api.get('/auth/me');
+      return {
+        success: true,
+        user: response.data.data.user
+      };
+    } catch (error) {
+      console.error('Erreur de vérification du token:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Erreur de vérification du token'
+      };
+    }
+  },
+
   // Déconnexion
   logout: () => {
     localStorage.removeItem('token');

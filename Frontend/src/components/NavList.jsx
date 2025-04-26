@@ -278,7 +278,7 @@ const NavList = ({ isDrawerOpen, toggleDrawer }) => {
         <div className="flex items-center justify-between max-w-screen-xl mx-auto">
           {/* Logo et Bouton Menu - Bouton visible uniquement si utilisateur connecté */}
           <div className="flex items-center gap-4">
-            {user && (
+            {user && user.role !== "ambulance" && (
               <button
                 onClick={toggleDrawer}
                 className="text-gray-400 hover:text-white p-2"

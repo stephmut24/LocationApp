@@ -25,17 +25,29 @@ const ambulanceService = {
 
   getAmbulances: async () => {
     try {
-      const response = await api.get('/hospitals/ambulances');
+      const response = await api.get('/hospital/ambulances'); // Utiliser le bon endpoint
       console.log('Liste des ambulances reçue:', response.data);
-      return {
-        data: response.data
+      
+      // Formater les données pour la carte
+      const formattedData = {
+        data: response.data.map(ambulance => ({
+          ...ambulance,
+          // S'assurer que location est dans le bon format pour Mapbox
+          location: {
+            coordinates: ambulance.location.coordinates || [0, 0],
+            type: 'Point'
+          }
+        }))
       };
+
+      console.log('Données formatées pour la carte:', formattedData);
+      return formattedData;
     } catch (error) {
       console.error('Erreur lors de la récupération des ambulances:', error);
       throw new Error('Impossible de récupérer la liste des ambulances');
     }
   },
-
+  
   getAmbulance: async (id) => {
     try {
       const response = await api.get(`/admin/ambulances/${id}`);
