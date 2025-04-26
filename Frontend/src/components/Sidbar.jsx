@@ -22,7 +22,9 @@ import {
   ExclamationTriangleIcon,
   MinusIcon,
 } from "@heroicons/react/24/outline";
+import { useAuth } from "../context/AuthContext";
 import HospitalForm from "./HopitalForm";
+import AmbulanceForm from "./AmbulanceForm";
 import ConfirmDialog from "./ConfirmDialog";
 
 const Sidbar = ({
@@ -34,6 +36,7 @@ const Sidbar = ({
   const [isHospitalsOpen, setIsHospitalsOpen] = useState(false);
   const [isEmergenciesOpen, setIsEmergenciesOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const { user, isHospital, logout } = useAuth();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formMode, setFormMode] = useState("add");
   const [selectedHospital, setSelectedHospital] = useState(null);
@@ -45,12 +48,14 @@ const Sidbar = ({
   // Configuration dynamique selon le mode
   const managementConfig = {
     hospital: {
-      label: "Gérer les hôpitaux",
-      icon: BuildingOffice2Icon,
+      label: isHospital() ? "Mes ambulances" : "Gérer les hôpitaux",
+      icon: isHospital() ? TruckIcon : BuildingOffice2Icon,
       addLabel: "Ajouter",
       editLabel: "Modifier",
       deleteLabel: "Supprimer",
-      deleteMessage: "Êtes-vous sûr de vouloir supprimer cet hôpital ?",
+      deleteMessage: isHospital()
+        ? "Êtes-vous sûr de vouloir supprimer cette ambulance ?"
+        : "Êtes-vous sûr de vouloir supprimer cet hôpital ?",
     },
     ambulance: {
       label: "Gérer les ambulances",
@@ -106,6 +111,7 @@ const Sidbar = ({
   const handleSubmit = async (data) => {
     try {
       const endpoint = mode === "hospital" ? "hospitals" : "ambulances";
+      const token = localStorage.getItem("token");
       let response;
 
       if (formMode === "add") {
@@ -113,6 +119,7 @@ const Sidbar = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(data),
         });
@@ -153,6 +160,14 @@ const Sidbar = ({
       setConfirmOpen(false);
     } catch (error) {
       console.error("Erreur:", error);
+    }
+  };
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Redirection vers la page de connexion ou autre
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
     }
   };
 
@@ -414,13 +429,22 @@ const Sidbar = ({
       </div>
 
       <Dialog open={formOpen} handler={() => setFormOpen(false)}>
-        <HospitalForm
-          mode={formMode}
-          initialData={selectedHospital}
-          onClose={() => setFormOpen(false)}
-          onSubmit={handleSubmit}
-          entityType={mode}
-        />
+        {mode === "hospital" ? (
+          <HospitalForm
+            mode={formMode}
+            initialData={selectedHospital}
+            onClose={() => setFormOpen(false)}
+            onSubmit={handleSubmit}
+            entityType={mode}
+          />
+        ) : (
+          <AmbulanceForm
+            mode={formMode}
+            initialData={selectedHospital}
+            onClose={() => setFormOpen(false)}
+            onSubmit={handleSubmit}
+          />
+        )}
       </Dialog>
 
       <ConfirmDialog

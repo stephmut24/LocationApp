@@ -1,16 +1,28 @@
 import React, { useRef, useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { MAPBOX_TOKEN } from "../utils/mapboxConfig";
-import { hospitalService } from "../Services/hopitalService";
+import hospitalService from "../Services/hopitalService";
 import { createCustomMarker } from "./CustomMarker";
 
-const MAP_CENTER = [29.2356, -1.6835]; // Goma ?
-const ZOOM_LEVEL = 18;
+const MAP_CENTER = [29.2204, -1.6585]; // Goma ?
+const ZOOM_LEVEL = 12;
 
 const styleOptions = {
   standard: "mapbox://styles/steph-24/cm9gwmiai007r01sg1nk5d0pf",
   satellite: "mapbox://styles/steph-24/cm9gx5dk800fg01spb5yq4tet",
   navigation: "mapbox://styles/steph-24/cm9gxab8700fi01rc75f21vlj",
+};
+const validateCoordinates = (coordinates) => {
+  return (
+    Array.isArray(coordinates) &&
+    coordinates.length === 2 &&
+    typeof coordinates[0] === "number" &&
+    typeof coordinates[1] === "number" &&
+    coordinates[0] >= -180 &&
+    coordinates[0] <= 180 &&
+    coordinates[1] >= -90 &&
+    coordinates[1] <= 90
+  );
 };
 
 const ShowMap = () => {
@@ -22,7 +34,7 @@ const ShowMap = () => {
     hospitals: [],
     ambulances: [],
     patients: [],
-  }); // Assuming you have a way to set locations
+  });
 
   useEffect(() => {
     mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -32,20 +44,37 @@ const ShowMap = () => {
       style: styleOptions[mapStyle],
       center: MAP_CENTER,
       zoom: ZOOM_LEVEL,
+      interactive: true,
     });
 
-    mapRef.current = map;
+    map.on("load", () => {
+      console.log("Carte chargée");
+      mapRef.current = map;
 
-    return () => map.remove();
+      map.addControl(new mapboxgl.NavigationControl(), "top-right");
+      map.addControl(new mapboxgl.FullscreenControl());
+
+      setLocations((prev) => ({
+        ...prev,
+      }));
+    });
+
+    return () => map && map.remove();
   }, [mapStyle]);
 
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const hospitals = await hospitalService.getHospitals();
+        // Modifié pour gérer directement la réponse
+        const response = await hospitalService.getHospitals();
+        console.log("Réponse du service:", response);
+
+        // Adaptez cette ligne selon la structure réelle de votre réponse
+        const hospitalData = response.data || response || [];
+
         setLocations((prev) => ({
           ...prev,
-          hospitals: hospitals.data || [],
+          hospitals: hospitalData,
         }));
       } catch (error) {
         console.error("Erreur chargement données:", error);
@@ -57,44 +86,69 @@ const ShowMap = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Ajouter après l'effet qui récupère les données
+
   // Effet pour mettre à jour les marqueurs
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Supprimer les anciens marqueurs
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
+    console.log("Total des hôpitaux à ajouter:", locations.hospitals.length);
+
     locations.hospitals.forEach((hospital) => {
-      const popupContent = `
-        <div class="p-3">
-          <h3 class="text-lg font-bold text-gray-900 mb-1">${hospital.name}</h3>
-          <p class="text-sm text-gray-600">${hospital.address}</p>
-          <div class="mt-2 text-sm text-gray-500">
-            <p>📞 ${hospital.phone}</p>
-            <p>📧 ${hospital.email}</p>
-          </div>
-        </div>
-      `;
+      const coordinates = hospital.location?.coordinates;
 
-      const marker = new mapboxgl.Marker(createCustomMarker("hospital"))
-        .setLngLat(hospital.location.coordinates)
-        .setPopup(
-          new mapboxgl.Popup({
-            offset: 25,
-            className: "rounded-lg shadow-lg",
-          }).setHTML(popupContent)
-        )
-        .addTo(mapRef.current);
+      if (!validateCoordinates(coordinates)) {
+        console.error(
+          `Coordonnées invalides pour ${hospital.name}:`,
+          coordinates
+        );
+        return;
+      }
 
-      markersRef.current.push(marker);
+      const [longitude, latitude] = coordinates;
+      console.log(
+        `Ajout marqueur: ${hospital.name} à [${longitude}, ${latitude}]`
+      );
+
+      try {
+        const marker = new mapboxgl.Marker(createCustomMarker("hospital"))
+          .setLngLat([longitude, latitude])
+          .setPopup(
+            new mapboxgl.Popup({
+              offset: 25,
+              className: "rounded-lg shadow-lg",
+            }).setHTML(`
+              <div class="p-3">
+                <h3 class="text-lg font-bold text-gray-900 mb-1">${
+                  hospital.name
+                }</h3>
+                <p class="text-sm text-gray-600">${hospital.address}</p>
+                <div class="mt-2 text-sm text-gray-500">
+                  <p>📞 ${hospital.phone || "N/A"}</p>
+                  <p>📧 ${hospital.email || "N/A"}</p>
+                </div>
+              </div>
+            `)
+          )
+          .addTo(mapRef.current);
+
+        const pos = marker.getLngLat();
+        console.log(`Position réelle du marqueur: [${pos.lng}, ${pos.lat}]`);
+
+        markersRef.current.push(marker);
+      } catch (error) {
+        console.error(`Erreur marqueur pour ${hospital.name}:`, error);
+      }
     });
   }, [locations]);
 
   return (
     <div className="relative w-full h-full">
       {/* Carte */}
-      <div ref={mapContainerRef} className="w-full h-full" />
+      <div ref={mapContainerRef} className="w-full h-full mao-container" />
 
       {/* Sélecteur de style */}
       <div className="absolute top-4 left-4 bg-white rounded-md shadow-md p-2 space-x-2 z-10">

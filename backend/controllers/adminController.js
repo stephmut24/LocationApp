@@ -62,3 +62,13 @@ export const addHospital = async (req, res) => {
     });
   }
 };
+
+export const getHospitals = async (req, res) => {
+  try {
+      const hospitals = await Hospital.find({});
+      res.status(200).json(hospitals);
+  } catch (error) {
+      console.error('Erreur lors de la récupération des hôpitaux:', error);
+      res.status(500).json({ success: false, message: 'Erreur lors de la récupération des hôpitaux' });
+  }
+};

@@ -58,20 +58,11 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// ...existing code...
+
 
 export const authorize = (...roles) => {
   return async (req, res, next) => {
     try {
-      // S'assurer que le middleware protect a été exécuté
-      if (!req.headers.authorization) {
-        console.log('Pas de token dans les headers');
-        return res.status(401).json({
-          success: false,
-          message: 'Token non fourni'
-        });
-      }
-
       // Vérifier si l'utilisateur est connecté
       if (!req.user) {
         console.log('Utilisateur non authentifié');
@@ -81,20 +72,28 @@ export const authorize = (...roles) => {
         });
       }
 
-      // Vérifier le rôle
+      // Autorisation spéciale pour les hôpitaux
+      if (req.user.role === 'hospital') {
+        // Si c'est une route liée aux ambulances, autoriser l'accès
+        if (req.baseUrl.includes('/hospitals') && req.path.includes('/ambulances')) {
+          console.log(`Accès autorisé pour l'hôpital ${req.user.email}`);
+          return next();
+        }
+      }
+
+      // Pour les autres cas, vérifier si le rôle est dans la liste des rôles autorisés
       if (!roles.includes(req.user.role)) {
-        console.log(`Rôle ${req.user.role} non autorisé. Rôles permis:`, roles);
+        console.log(`Rôle ${req.user.role} non autorisé pour cette route`);
         return res.status(403).json({
           success: false,
-          message: `Accès non autorisé. Rôle requis: ${roles.join(', ')}`
+          message: 'Accès non autorisé pour cette ressource'
         });
       }
 
-      // Si tout est OK, continuer
-      console.log(`Accès autorisé pour ${req.user.email} avec rôle ${req.user.role}`);
+      console.log(`Accès autorisé pour ${req.user.email} avec le rôle ${req.user.role}`);
       next();
     } catch (error) {
-      console.error('Erreur dans authorize:', error);
+      console.error('Erreur dans le middleware d\'autorisation:', error);
       return res.status(500).json({
         success: false,
         message: 'Erreur lors de la vérification des autorisations'

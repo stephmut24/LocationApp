@@ -19,7 +19,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin',   adminRoutes);
-app.use('/api/hospital', protect, authorize('hospital'), hospitalRoutes);
+app.use('/api/hospital',protect, authorize('hospital'),  hospitalRoutes);
 app.use('/api/ambulance', protect, authorize('ambulance'), ambulanceRoutes);
 app.use('/api/patient', patientRoutes); // Pas d'authentification requise
 

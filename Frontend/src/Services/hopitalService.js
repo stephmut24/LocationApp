@@ -14,7 +14,7 @@ const hospitalService = {
 
   updateHospital: async (id, hospitalData) => {
     try {
-      const response = await api.put(`/hospitals/${id}`, hospitalData);
+      const response = await api.put(`/admin/hospitals/${id}`, hospitalData);
       console.log('Hôpital mis à jour:', response.data);
       return response.data;
     } catch (error) {
@@ -25,17 +25,23 @@ const hospitalService = {
 
   getHospitals: async () => {
     try {
-      const response = await api.get('/hospitals');
-      return response.data;
+      const user = JSON.parse(localStorage.getItem('user'));
+      const endpoint = user?.role === 'hospital' 
+        ? '/hospital/ambulances'  
+        : '/admin/hospitals';      // Pour l'admin
+      console.log('Endpoint utilisé:', endpoint);
+      const response = await api.get(endpoint);
+      return response;
     } catch (error) {
-      console.error('Erreur lors de la récupération des hôpitaux:', error);
-      throw new Error('Impossible de récupérer la liste des hôpitaux');
+      console.error('Erreur lors de la récupération:', error);
+      throw error;
     }
+  
   },
-
+  
   getHospital: async (id) => {
     try {
-      const response = await api.get(`/hospitals/${id}`);
+      const response = await api.get(`/admin/hospitals/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la récupération de l'hôpital ${id}:`, error);

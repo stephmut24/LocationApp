@@ -19,14 +19,37 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const isHospital = () => {
+    return user?.role === "hospital";
+  };
+
+  const getHospitalId = () => {
+    return user?.hospital;
+  };
+
+  const hasPermission = (requiredRole) => {
+    return user?.role === requiredRole;
+  };
+
   // Charger les données utilisateur depuis localStorage au démarrage
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         const storedUser = localStorage.getItem("user");
-        if (storedUser) {
+        const token = localStorage.getItem("token");
+
+        if (storedUser && token) {
           const userData = JSON.parse(storedUser);
-          setUser(userData);
+          // Vérifier la validité du token
+          const response = await authService.verifyToken();
+          if (response.success) {
+            setUser(userData);
+          } else {
+            // Si le token n'est plus valide, déconnexion
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error("Erreur lors de l'initialisation:", error);
@@ -88,6 +111,9 @@ export const AuthProvider = ({ children }) => {
         loading,
         error,
         isAuthenticated,
+        isHospital,
+        getHospitalId,
+        hasPermission,
       }}
     >
       {!loading && children}

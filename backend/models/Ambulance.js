@@ -11,10 +11,14 @@ const AmbulanceSchema = new mongoose.Schema({
     ref: 'Hospital',
     required: true
   },
-  status: {
+  driverEmail: {
     type: String,
-    enum: ['available', 'busy', 'maintenance'],
-    default: 'available'
+    required: true,
+    unique: true
+  },
+  driverPhone: {
+    type: String,
+    required: true
   },
   location: {
     type: {
@@ -26,6 +30,11 @@ const AmbulanceSchema = new mongoose.Schema({
       type: [Number], // [longitude, latitude]
       default: [0, 0]
     }
+  },
+  status: {
+    type: String,
+    enum: ['available', 'busy', 'maintenance'],
+    default: 'available'
   },
   createdAt: {
     type: Date,

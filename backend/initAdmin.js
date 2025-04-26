@@ -27,7 +27,7 @@ async function createDefaultAdmin() {
     });
 
     await admin.save();
-    console.log('🎉 Admin créé avec succès !');
+    console.log(' Admin créé avec succès !');
   } catch (err) {
     console.error('Erreur lors de la création de l’admin :', err);
   } 
