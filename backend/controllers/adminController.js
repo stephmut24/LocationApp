@@ -65,10 +65,29 @@ export const addHospital = async (req, res) => {
 
 export const getHospitals = async (req, res) => {
   try {
-      const hospitals = await Hospital.find({});
-      res.status(200).json(hospitals);
+    console.log('Récupération des hôpitaux...');
+    
+    const hospitals = await Hospital.find({}).lean();
+    
+    console.log(`Nombre d'hôpitaux trouvés: ${hospitals.length}`);
+    console.log('Premier hôpital:', hospitals[0]);
+
+    // Format de réponse standardisé
+    res.status(200).json({
+      success: true,
+      count: hospitals.length,
+      data: hospitals.map(hospital => ({
+        ...hospital,
+        location: hospital.location?.coordinates || hospital.location // Gestion des deux formats possibles
+      }))
+    });
+
   } catch (error) {
-      console.error('Erreur lors de la récupération des hôpitaux:', error);
-      res.status(500).json({ success: false, message: 'Erreur lors de la récupération des hôpitaux' });
+    console.error('Erreur détaillée:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors de la récupération des hôpitaux',
+      error: error.message 
+    });
   }
 };

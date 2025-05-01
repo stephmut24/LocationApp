@@ -28,7 +28,7 @@ const AmbulanceSchema = new mongoose.Schema({
     },
     coordinates: {
       type: [Number], // [longitude, latitude]
-      default: [0, 0]
+      required: true
     }
   },
   status: {

@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Hospital from '../models/Hospital.js';
 import * as emailService from '../utils/emailService.js';
 
+// Dans votre fichier de contrôleur
 export const addAmbulance = async (req, res) => {
   try {
     const { 
@@ -31,6 +32,14 @@ export const addAmbulance = async (req, res) => {
       });
     }
     
+    // S'assurer que les coordonnées sont dans le format attendu [longitude, latitude]
+    let coordinates = [0, 0];
+    if (location && location.coordinates && Array.isArray(location.coordinates)) {
+      // Si les coordonnées sont fournies au format [latitude, longitude], les inverser
+      // Pour MongoDB GeoJSON, elles doivent être au format [longitude, latitude]
+      coordinates = [location.coordinates[1], location.coordinates[0]];
+    }
+    
     // Créer la nouvelle ambulance
     const ambulance = new Ambulance({
       registrationNumber,
@@ -39,13 +48,14 @@ export const addAmbulance = async (req, res) => {
       driverPhone,
       location: {
         type: 'Point',
-        coordinates: location || [0, 0]
+        coordinates: coordinates
       },
       status: 'available'
     });
     
     await ambulance.save();
     
+    // Reste du code inchangé...
     // Générer un mot de passe temporaire
     const tempPassword = emailService.generateRandomPassword();
     

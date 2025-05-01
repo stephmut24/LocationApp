@@ -5,7 +5,7 @@ import {
     getAmbulance,
     updateAmbulance
 } from '../controllers/hospitalController.js';
-import { protect, authorize } from '../middlewares/authMiddleware.js';
+
 
 const router = express.Router();
 

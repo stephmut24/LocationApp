@@ -22,24 +22,21 @@ import {
   ExclamationTriangleIcon,
   MinusIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import HospitalForm from "./HopitalForm";
 import AmbulanceForm from "./AmbulanceForm";
 import ConfirmDialog from "./ConfirmDialog";
 
-const Sidbar = ({
-  isDrawerOpen,
-  openDrawer,
-  closeDrawer,
-  mode = "hospital",
-}) => {
+const Sidbar = ({ isDrawerOpen, openDrawer, mode = "hospital" }) => {
   const [isHospitalsOpen, setIsHospitalsOpen] = useState(false);
   const [isEmergenciesOpen, setIsEmergenciesOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
-  const { user, isHospital, logout } = useAuth();
+  const { isHospital, logout } = useAuth();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formMode, setFormMode] = useState("add");
   const [selectedHospital, setSelectedHospital] = useState(null);
+  const [selectedAmbulance, setSelectedAmbulance] = useState(null); // Ajout de la variable manquante
 
   // Taille des icônes selon l'état de la sidebar
   const iconSize = isDrawerOpen ? "h-6 w-6" : "h-7 w-7";
@@ -78,19 +75,37 @@ const Sidbar = ({
   const handleAdd = () => {
     setFormMode("add");
     setSelectedHospital(null);
+    setSelectedAmbulance(null); // Réinitialiser aussi l'ambulance sélectionnée
     setFormOpen(true);
   };
 
   const handleEdit = () => {
     setFormMode("edit");
-    setSelectedHospital({
-      name: mode === "hospital" ? "Nom de l'hôpital" : "Nom de l'ambulance",
-      email: "email@exemple.com",
-      address: "Adresse",
-      location: {
-        coordinates: [0, 0],
-      },
-    });
+
+    // Définir l'entité à éditer selon le mode
+    if (mode === "hospital") {
+      setSelectedHospital({
+        name: "Nom de l'hôpital",
+        email: "email@exemple.com",
+        address: "Adresse",
+        location: {
+          coordinates: [0, 0],
+        },
+        _id: "temp-id", // Ajout d'un ID temporaire pour éviter les erreurs
+      });
+      setSelectedAmbulance(null);
+    } else {
+      setSelectedAmbulance({
+        name: "Nom de l'ambulance",
+        email: "email@exemple.com",
+        address: "Adresse",
+        location: {
+          coordinates: [0, 0],
+        },
+        _id: "temp-id", // Ajout d'un ID temporaire pour éviter les erreurs
+      });
+    }
+
     setFormOpen(true);
   };
 
@@ -110,45 +125,102 @@ const Sidbar = ({
 
   const handleSubmit = async (data) => {
     try {
-      const endpoint = mode === "hospital" ? "hospitals" : "ambulances";
-      const token = localStorage.getItem("token");
-      let response;
+      // Import dynamique des services
+      const [hospitalService, ambulanceService] = await Promise.all([
+        import("../Services/hopitalService").then((m) => m.default),
+        import("../Services/ambulanceService").then((m) => m.default),
+      ]);
 
-      if (formMode === "add") {
-        response = await fetch(`/api/${endpoint}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(data),
-        });
-      } else {
-        response = await fetch(`/api/${endpoint}/${selectedHospital._id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        });
+      console.log(`Tentative ${formMode} pour ${mode}:`, data);
+
+      // Vérifier si tous les champs requis sont présents
+      if (
+        !data.name ||
+        !data.email ||
+        !data.phone ||
+        !data.address ||
+        !data.location
+      ) {
+        throw new Error("Tous les champs sont requis");
       }
 
-      const text = await response.text();
-      const result = text ? JSON.parse(text) : {};
+      // Formater les données avant l'envoi
+      const formattedData = {
+        ...data,
+        location: {
+          type: "Point",
+          coordinates: Array.isArray(data.location)
+            ? data.location
+            : data.location.coordinates || [0, 0],
+        },
+      };
 
-      if (!response.ok)
-        throw new Error(result.message || "Une erreur est survenue");
+      // Fermer le formulaire avant la requête
+      setFormOpen(false);
+
+      let response;
+      if (mode === "hospital") {
+        response =
+          formMode === "add"
+            ? await hospitalService.addHospital(formattedData)
+            : await hospitalService.updateHospital(
+                selectedHospital._id,
+                formattedData
+              );
+      } else {
+        response =
+          formMode === "add"
+            ? await ambulanceService.addAmbulance(formattedData)
+            : await ambulanceService.updateAmbulance(
+                selectedAmbulance._id,
+                formattedData
+              );
+      }
+
+      // Vérifier la réponse
+      if (!response || !response.success) {
+        throw new Error(response?.message || "Une erreur est survenue");
+      }
+
+      // Émettre l'événement de rafraîchissement
+      const eventName =
+        mode === "hospital" ? "hospitalAdded" : "ambulanceAdded";
+      window.dispatchEvent(
+        new CustomEvent(eventName, { detail: response.data })
+      );
+
+      // Notification de succès
+      toast.success(
+        `${mode === "hospital" ? "Hôpital" : "Ambulance"} ${
+          formMode === "add" ? "ajouté" : "mis à jour"
+        } avec succès!`
+      );
     } catch (error) {
-      console.error("Erreur:", error);
-      throw error;
+      console.error("Erreur détaillée:", error);
+      toast.error(error.message || "Une erreur est survenue");
+      // Rouvrir le formulaire en cas d'erreur
+      setFormOpen(true);
     }
   };
 
   const handleConfirmDelete = async () => {
     try {
       const endpoint = mode === "hospital" ? "hospitals" : "ambulances";
-      const response = await fetch(`/api/${endpoint}/${selectedHospital._id}`, {
+      const token = localStorage.getItem("token");
+      // Utiliser le même baseUrl que pour les autres opérations
+      const baseUrl = mode === "hospital" ? "/admin" : "/api";
+
+      // Utiliser l'ID de l'entité appropriée selon le mode
+      const idToUse =
+        mode === "hospital"
+          ? selectedHospital?._id || "temp-id"
+          : selectedAmbulance?._id || "temp-id";
+
+      const response = await fetch(`${baseUrl}/${endpoint}/${idToUse}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const text = await response.text();
@@ -158,10 +230,16 @@ const Sidbar = ({
         throw new Error(result.message || "Erreur lors de la suppression");
 
       setConfirmOpen(false);
+
+      // Rafraîchir les données après la suppression
+      const eventName =
+        mode === "hospital" ? "hospitalAdded" : "ambulanceAdded";
+      window.dispatchEvent(new CustomEvent(eventName, { detail: [] }));
     } catch (error) {
       console.error("Erreur:", error);
     }
   };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -390,7 +468,10 @@ const Sidbar = ({
 
           {/* Se déconnecter */}
           {isDrawerOpen ? (
-            <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-2 text-white cursor-pointer">
+            <ListItem
+              className="p-3 hover:bg-gray-800 rounded-lg mb-2 text-white cursor-pointer"
+              onClick={handleLogout} // Ajout du gestionnaire d'événement manquant
+            >
               <ListItemPrefix>
                 <ArrowRightOnRectangleIcon
                   className={`${iconSize} ${iconColor} mr-3`}
@@ -400,7 +481,10 @@ const Sidbar = ({
             </ListItem>
           ) : (
             <Tooltip content="Se déconnecter" placement="right">
-              <ListItem className="p-3 hover:bg-gray-800 rounded-lg mb-3 text-white cursor-pointer flex justify-center">
+              <ListItem
+                className="p-3 hover:bg-gray-800 rounded-lg mb-3 text-white cursor-pointer flex justify-center"
+                onClick={handleLogout} // Ajout du gestionnaire d'événement manquant
+              >
                 <ArrowRightOnRectangleIcon
                   className={`${iconSize} ${iconColor}`}
                 />
@@ -440,7 +524,7 @@ const Sidbar = ({
         ) : (
           <AmbulanceForm
             mode={formMode}
-            initialData={selectedHospital}
+            initialData={selectedAmbulance || selectedHospital} // Utiliser la bonne entité selon le mode
             onClose={() => setFormOpen(false)}
             onSubmit={handleSubmit}
           />

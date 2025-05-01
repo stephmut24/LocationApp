@@ -5,7 +5,7 @@ import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import hospitalRoutes from './routes/hospitalRoutes.js';
 import ambulanceRoutes from './routes/ambulanceRoutes.js';
-import patientRoutes from './routes/patientRoutes.js';
+import emergencyRoutes from './routes/emergencyRoutes.js';
 import { protect, authorize } from './middlewares/authMiddleware.js';
 import './initAdmin.js';
 
@@ -21,18 +21,18 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin',   adminRoutes);
 app.use('/api/hospital',protect, authorize('hospital'),  hospitalRoutes);
 app.use('/api/ambulance', protect, authorize('ambulance'), ambulanceRoutes);
-app.use('/api/patient', patientRoutes); // Pas d'authentification requise
-
+app.use('/api/emergencies', emergencyRoutes);
 // Route par défaut
 app.get('/', (req, res) => {
   res.send('API du système d\'urgence médicale');
 });
 
 // Gestion des erreurs 404
-app.use((req, res) => {
+app.use((req, res,next) => {
   res.status(404).json({
     success: false,
-    message: 'Route non trouvée'
+    message: 'Route non trouvée',
+    url: req.originalUrl
   });
 });
 

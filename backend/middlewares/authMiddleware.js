@@ -101,3 +101,19 @@ export const authorize = (...roles) => {
     }
   };
 };
+
+
+export const allowPublicEmergency = (req, res, next) => {
+  // Si c'est une route de création d'urgence, permettre l'accès sans authentification
+  if (req.method === 'POST' && req.path === '/create') {
+    console.log('Accès public autorisé pour la création d\'urgence');
+    return next();
+  }
+
+  
+  if (!req.user) {
+    return protect(req, res, next);
+  }
+
+  next();
+};

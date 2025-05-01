@@ -38,8 +38,9 @@ const HospitalForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mapStyle, setMapStyle] = useState("standard");
   const [viewState, setViewState] = useState({
-    longitude: formData.location[0],
     latitude: formData.location[1],
+    longitude: formData.location[0],
+
     zoom: 14,
   });
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -65,7 +66,7 @@ const HospitalForm = ({
     });
     setLongitudeInput(formData.location[0].toString());
     setLatitudeInput(formData.location[1].toString());
-  }, [initialData]);
+  }, [formData.location, initialData]);
 
   useEffect(() => {
     setLongitudeInput(formData.location[0].toString());

@@ -1,16 +1,56 @@
 import api from '../config/axios';
 
 const ambulanceService = {
-  addAmbulance: async (ambulanceData) => {
+  addAmbulance : async (ambulanceData) => {
     try {
-      const response = await api.post('/hospital/ambulances', ambulanceData);
-      console.log('Ambulance ajoutée avec succès:', response.data);
-      return response.data;
+      // Validation des données
+      if (!ambulanceData.registrationNumber || !ambulanceData.driverEmail) {
+        throw new Error('Les champs requis sont manquants');
+      }
+  
+      // Normalisation des coordonnées
+      const coordinates = Array.isArray(ambulanceData.location)
+        ? ambulanceData.location
+        : ambulanceData.location?.coordinates || [29.2356, -1.6835];
+  
+      // Formatage des données pour l'API
+      const payload = {
+        registrationNumber: ambulanceData.registrationNumber,
+        driverEmail: ambulanceData.driverEmail,
+        driverPhone: ambulanceData.driverPhone || '',
+        location: {
+          type: 'Point',
+          coordinates: [
+            parseFloat(coordinates[0]), // longitude
+            parseFloat(coordinates[1])  // latitude
+          ]
+        },
+        status: 'available'
+      };
+  
+      console.log('Envoi au serveur:', payload);
+  
+      const response = await api.post('/hospital/ambulances', payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+  
+      if (response.status >= 200 && response.status < 300) {
+        return response.data;
+      }
+      throw new Error(response.data?.message || 'Erreur serveur');
     } catch (error) {
-      console.error('Erreur lors de l\'ajout de l\'ambulance:', error);
-      throw new Error(error.response?.data?.message || 'Erreur lors de l\'ajout de l\'ambulance');
+      console.error('Erreur détaillée:', {
+        message: error.message,
+        response: error.response?.data,
+        config: error.config
+      });
+      throw new Error(error.response?.data?.message || 'Erreur lors de l\'ajout');
     }
   },
+
 
   updateAmbulance: async (id, ambulanceData) => {
     try {
@@ -25,28 +65,35 @@ const ambulanceService = {
 
   getAmbulances: async () => {
     try {
-      const response = await api.get('/hospital/ambulances'); // Utiliser le bon endpoint
+      const response = await api.get('/hospital/ambulances');
       console.log('Liste des ambulances reçue:', response.data);
       
-      // Formater les données pour la carte
-      const formattedData = {
-        data: response.data.map(ambulance => ({
+      const formattedAmbulances = response.data
+        .filter(ambulance => ambulance && ambulance.location)
+        .map(ambulance => ({
           ...ambulance,
-          // S'assurer que location est dans le bon format pour Mapbox
           location: {
-            coordinates: ambulance.location.coordinates || [0, 0],
-            type: 'Point'
+            type: 'Point',
+            coordinates: Array.isArray(ambulance.location?.coordinates) 
+              ? ambulance.location.coordinates 
+              : Array.isArray(ambulance.location) 
+                ? ambulance.location 
+                : [0, 0]
           }
-        }))
-      };
+        }));
 
-      console.log('Données formatées pour la carte:', formattedData);
-      return formattedData;
+      console.log('Ambulances formatées:', formattedAmbulances);
+      
+      return {
+        success: true,
+        data: formattedAmbulances
+      };
     } catch (error) {
-      console.error('Erreur lors de la récupération des ambulances:', error);
-      throw new Error('Impossible de récupérer la liste des ambulances');
+      console.error('Erreur récupération ambulances:', error);
+      throw error;
     }
   },
+
   
   getAmbulance: async (id) => {
     try {

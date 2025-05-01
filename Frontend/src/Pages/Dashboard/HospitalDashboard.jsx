@@ -72,7 +72,12 @@ const HospitalDashboard = () => {
               {/* La carte Mapbox sera ajoutée ici */}
               <ShowMap />
             </div>
-            <div className="bg-white rounded-lg shadow-md h-96 w-1/3"></div>
+            <div className="bg-white rounded-lg shadow-md h-96 w-1/3">
+              <h1 className="text-xl  font-bold text-blue-900 p-4">
+                <Ambulance className="h-6 w-6 text-blue-600 inline-block mr-2" />
+                Interventions en cours
+              </h1>
+            </div>
           </div>
         </div>
       </div>

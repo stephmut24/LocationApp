@@ -52,19 +52,19 @@ const AdminDashboard = () => {
             <DashboardCard
               icon={<Building2 className="h-6 w-6 text-blue-600" />}
               title="Hôpitaux"
-              value="12"
+              value="6"
               description="Hôpitaux actifs"
             />
             <DashboardCard
               icon={<Ambulance className="h-6 w-6 text-red-600" />}
               title="Ambulances"
-              value="45"
+              value="12"
               description="Véhicules en service"
             />
             <DashboardCard
               icon={<Users className="h-6 w-6 text-green-600" />}
               title="Interventions"
-              value="128"
+              value="5"
               description="Ce mois-ci"
             />
             <DashboardCard
