@@ -2,14 +2,20 @@ import React, { useState } from "react";
 import { Ambulance, Users, Settings } from "lucide-react";
 import Sidbar from "../../components/Sidbar";
 import NavList from "../../components/NavList";
-import ShowMap from "../../components/ShowMap";
+import ShowMap from "../../components/ShowMap"; // Assurez-vous que le chemin est correct
+import useSocket from "../../hooks/useSocket";
+import Popup from "../../components/Popup"; // Assurez-vous que le chemin est correct
 
 const HospitalDashboard = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const emergency = useSocket(); // Utilisation du hook pour récupérer les urgences
 
   // Fonction pour gérer le toggle depuis la sidebar
   const handleSidebarToggle = () => {
     setIsDrawerOpen(!isDrawerOpen);
+  };
+  const handleClosePopup = () => {
+    // Logique pour fermer le popup
   };
 
   return (
@@ -81,6 +87,7 @@ const HospitalDashboard = () => {
           </div>
         </div>
       </div>
+      {emergency && <Popup emergency={emergency} onClose={handleClosePopup} />}
     </div>
   );
 };

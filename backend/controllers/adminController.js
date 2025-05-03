@@ -6,10 +6,12 @@ import * as emailService from '../utils/emailService.js';
 export const addHospital = async (req, res) => {
   try {
     const { name, email,phone, address, location } = req.body;
+
+    const [longitude, latitude] = location.coordinates;
     
     // Vérifier si l'hôpital existe déjà
     const existingHospital = await Hospital.findOne({ email });
-    if (existingHospital) {
+    if (typeof longitude !== 'number' || typeof latitude !== 'number') {
       return res.status(400).json({
         success: false,
         message: 'Un hôpital avec cet email existe déjà'
@@ -24,7 +26,7 @@ export const addHospital = async (req, res) => {
       address,
       location: {
         type: 'Point',
-        coordinates: location
+        coordinates: [longitude, latitude]
       }
     });
     

@@ -3,6 +3,8 @@ import mapboxgl from "mapbox-gl";
 import { MAPBOX_TOKEN } from "../utils/mapboxConfig";
 import hospitalService from "../Services/hopitalService";
 import ambulanceService from "../Services/ambulanceService";
+import emergencyService from "../Services/emergencyService";
+import EmergencyAlert from "./EmergencyAlert";
 import { createCustomMarker } from "./CustomMarker";
 import { useAuth } from "../context/AuthContext";
 
@@ -15,13 +17,19 @@ const styleOptions = {
   navigation: "mapbox://styles/steph-24/cm9gxab8700fi01rc75f21vlj",
 };
 
-const ShowMap = ({ serviceType = "hospital" }) => {
+const ShowMap = ({ serviceType = "hospital", emergencies }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const [mapStyle, setMapStyle] = useState("standard");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { user } = useAuth();
+
+  const [playAlert, setPlayAlert] = useState(false);
+  const playAudio = () => {
+    const audio = new Audio("/path/to/your/alert-sound.mp3"); // Remplace par le chemin de ton fichier audio
+    audio.play();
+  };
 
   // Fonction pour extraire les coordonnées dans différents formats
   const extractCoordinates = (item) => {
@@ -62,10 +70,16 @@ const ShowMap = ({ serviceType = "hospital" }) => {
 
     try {
       const service =
-        serviceType === "hospital" ? hospitalService : ambulanceService;
+        serviceType === "hospital"
+          ? hospitalService
+          : serviceType === "ambulance"
+          ? ambulanceService
+          : emergencyService;
       const response = await (serviceType === "hospital"
         ? service.getHospitals()
-        : service.getAmbulances());
+        : serviceType === "ambulance"
+        ? service.getAmbulances()
+        : service.getEmergencies());
 
       console.log(`Données reçues (${serviceType}):`, response);
 
@@ -179,6 +193,19 @@ const ShowMap = ({ serviceType = "hospital" }) => {
       console.error(`Erreur chargement ${serviceType}:`, error);
     }
   }, [serviceType]);
+
+  useEffect(() => {
+    if (emergencies && emergencies.length > 0) {
+      setPlayAlert(true);
+    }
+  }, [emergencies]);
+
+  useEffect(() => {
+    if (playAlert) {
+      playAudio(); // Joue l'audio quand playAlert est true
+      setPlayAlert(false); // Réinitialise playAlert pour ne pas rejouer l'audio
+    }
+  }, [playAlert]);
   // Effet pour initialiser la carte
   useEffect(() => {
     mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -208,6 +235,7 @@ const ShowMap = ({ serviceType = "hospital" }) => {
 
   return (
     <div className="relative w-full h-full">
+      <EmergencyAlert play={playAlert} />
       <div ref={mapContainerRef} className="w-full h-full" />
       <div className="absolute top-4 left-4 bg-white rounded-md shadow-md p-2 space-x-2 z-10">
         {Object.keys(styleOptions).map((styleKey) => (

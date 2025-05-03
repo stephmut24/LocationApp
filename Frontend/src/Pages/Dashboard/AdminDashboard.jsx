@@ -5,11 +5,14 @@ import { useAuth } from "../../context/AuthContext";
 import Sidbar from "../../components/Sidbar";
 import NavList from "../../components/NavList";
 import ShowMap from "../../components/ShowMap";
+import useSocket from "../../hooks/useSocket"; // Assurez-vous que le chemin est correct
+import Popup from "../../components/Popup"; // Assurez-vous que le chemin est correct
 
 const AdminDashboard = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const emergency = useSocket(); // Utilisation du hook pour récupérer les urgences
 
   useEffect(() => {
     if (!isAuthenticated() || user?.role !== "admin") {
@@ -20,6 +23,11 @@ const AdminDashboard = () => {
   // Fonction pour gérer le toggle depuis la sidebar
   const handleSidebarToggle = () => {
     setIsDrawerOpen(!isDrawerOpen);
+  };
+
+  // Fonction pour fermer le popup
+  const handleClosePopup = () => {
+    // Ici tu peux remettre 'emergency' à null si tu veux le fermer
   };
 
   return (
@@ -83,6 +91,7 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+      {emergency && <Popup emergency={emergency} onClose={handleClosePopup} />}
     </div>
   );
 };

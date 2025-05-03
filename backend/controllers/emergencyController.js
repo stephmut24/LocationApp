@@ -1,8 +1,7 @@
 import Emergency from '../models/Emergency.js';
 import Neo4jService from '../services/neo4jService.js';
 
-const neo4jService = new Neo4jService();
-await neo4jService.init();
+
 
 export const createEmergency = async (req, res) => {
   try {
@@ -34,14 +33,27 @@ export const createEmergency = async (req, res) => {
     const savedEmergency = await emergency.save();
     console.log('Emergency sauvegardée dans MongoDB:', savedEmergency._id);
 
-    console.log('Création du nœud dans Neo4j...');
-    const neo4jResult = await neo4jService.createEmergencyNodeAndCalculateDistances(savedEmergency);
+    // Partie 1 - Création du nœud urgence dans Neo4j (réponse rapide au patient)
+    const neo4jService = new Neo4jService();
+    await neo4jService.init();
+    await neo4jService.createEmergencyNode(savedEmergency); // Partie simple (création du noeud)
+
+    // Partie 2 - Traitement interne (distances et ambulance en arrière-plan)
+    neo4jService.processEmergency(savedEmergency); // Pas de await ici pour garder la réponse rapide
+
+    // Envoi en temps réel via socket.io
+    const io = req.app.get('io');
+    io.emit('newEmergency', {
+      id: savedEmergency._id,
+      location: savedEmergency.location.coordinates,
+      phoneNumber: savedEmergency.phoneNumber,
+      createdAt: savedEmergency.createdAt,
+    });
 
     res.status(201).json({
       success: true,
       data: {
         emergency: savedEmergency,
-        nearbyHospitals: neo4jResult.nearbyHospitals
       },
       message: "Urgence créée avec succès"
     });
@@ -55,7 +67,6 @@ export const createEmergency = async (req, res) => {
     });
   }
 };
-
   
 export const getEmergencies = async (req, res) => {
   try {

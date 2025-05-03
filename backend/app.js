@@ -1,6 +1,7 @@
 
 import cors from 'cors';
 import express from 'express';
+import { initSocket } from './utils/socket.js'; 
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import hospitalRoutes from './routes/hospitalRoutes.js';
@@ -12,8 +13,14 @@ import './initAdmin.js';
 
 const app = express();
 
+// Initialisation de Socket.io avec l'application Express
+const { server, io } = initSocket(app);
+
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',  // votre frontend
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes
